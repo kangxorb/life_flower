@@ -250,6 +250,23 @@
     const resultContent = document.getElementById('result-content');
     const langToggle = document.getElementById('lang-toggle');
 
+    // 다양한 조합으로 birthFlowers 키를 안전하게 찾는 함수
+function getFlowerData(key, lang) {
+  const ko = birthFlowers[key];
+  if (!ko) return null;
+  if (lang === 'en') {
+    const m = ko.name
+      .replace('장미','rose').replace('튤립','tulip').replace('해바라기','sunflower')
+      .replace('국화','chrysanthemum').replace('수선화','daffodil');
+    return { ...ko, name: m };
+  }
+  return ko;
+}
+
+// (선택) 콘솔 진단용
+window.debugBF = () =>
+  console.log('개수=', Object.keys(birthFlowers).length, '5-31?', !!birthFlowers['5-31'], birthFlowers['5-31']);
+
     /* ------------------------
        4) 선택 박스 세팅
     -------------------------*/
@@ -333,78 +350,73 @@
       LANG = LANG === 'ko' ? 'en' : 'ko';
       applyI18n();
     });
-    showResultButton.addEventListener('click', async () => {
-  const month = monthSelect.value;
-  const day = daySelect.value;
+        // ==================== CLICK HANDLER (REPLACED) ====================
+        showResultButton.addEventListener('click', async () => {
+          const month = parseInt(monthSelect.value, 10);
+          const day = parseInt(daySelect.value, 10);
+          const key = `${month}-${day}`;
 
-  // ⬇️ 핵심: 앞의 0 등 포맷 문제 방지
-  const key = `${parseInt(month, 10)}-${parseInt(day, 10)}`;
+          const flowerData = typeof getFlowerData === 'function'
+            ? getFlowerData(key, (typeof currentLang !== 'undefined' ? currentLang : 'ko'))
+            : (window.birthFlowers ? window.birthFlowers[key] : null);
 
-  const flowerData = birthFlowers[key];
-  if (!flowerData) {
-    console.warn('찾는 키가 없습니다:', key, '예시 키들:', Object.keys(birthFlowers).slice(0, 10));
-    alert("선택하신 날짜의 탄생화 정보를 찾을 수 없습니다.");
-    return;
-  }
+          if (!flowerData) {
+            console.warn('찾을 수가 없습니다:', key);
+            alert((typeof currentLang !== 'undefined' && currentLang === 'en')
+              ? 'No birthday flower data for that date.'
+              : '선택하신 날짜의 탄생화 정보를 찾을 수 없습니다.');
+            return;
+          }
 
-  // ↓ 기존에 있던 나머지 코드(이미지 생성, 텍스트 채우기 등)는 그대로 두세요
-  startPage.classList.add('hidden');
-  resultPage.classList.remove('hidden');
-  loadingOverlay.classList.remove('hidden');
-  resultContent.classList.add('opacity-0');
-  showResultButton.disabled = true;
+          // 화면 전환 & 로딩
+          startPage.classList.add('hidden');
+          resultPage.classList.remove('hidden');
+          loadingOverlay.classList.remove('hidden');
+          resultContent.classList.add('opacity-0');
+          showResultButton.disabled = true;
 
-  const imageUrl = await generateImage(flowerData.name);
+          // 배경 이미지(Unsplash 또는 서버리스) 생성
+          let imageUrl = '';
+          try {
+            imageUrl = await generateImage(flowerData.name);
+          } catch (e) {
+            console.error(e);
+            imageUrl = 'https://source.unsplash.com/360x640/?flower';
+          }
 
-  document.getElementById('daily-zodiac').textContent = getDailyZodiac(month, day);
-  document.getElementById('result-date').textContent = `${month}월 ${day}일의 당신`;
-  document.getElementById('result-flower-name').textContent = flowerData.name;
-  document.getElementById('result-keywords').textContent = flowerData.keywords;
-  document.getElementById('result-description').textContent = flowerData.description;
-  document.getElementById('result-background').style.backgroundImage = `url(${imageUrl})`;
+          // 텍스트 채우기
+          const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+          document.getElementById('daily-zodiac').textContent =
+            getDailyZodiac(month, day);
 
-  const compatibilitySection = document.getElementById('compatibility-section');
-  if (flowerData.goodMatch && flowerData.badMatch) {
-    document.getElementById('good-match-flower').textContent = flowerData.goodMatch;
-    document.getElementById('bad-match-flower').textContent = flowerData.badMatch;
-    compatibilitySection.classList.remove('hidden');
-  } else {
-    compatibilitySection.classList.add('hidden');
-  }
+          document.getElementById('result-date').textContent = isEn
+            ? `You on ${month}/${day}`
+            : `${month}월 ${day}일의 당신`;
 
-  loadingOverlay.classList.add('hidden');
-  resultContent.classList.remove('opacity-0');
-  showResultButton.disabled = false;
-});
+          document.getElementById('result-flower-name').textContent = flowerData.name;
+          document.getElementById('result-keywords').textContent = flowerData.keywords;
+          document.getElementById('result-description').textContent = flowerData.description;
 
-    retryButton.addEventListener('click', () => {
-      resultPage.classList.add('hidden');
-      startPage.classList.remove('hidden');
-      resultContent.classList.add('opacity-0');
-      document.getElementById('result-background').style.backgroundImage = 'none';
-    });
+          const bg = document.getElementById('result-background');
+          if (bg) bg.style.backgroundImage = `url(${imageUrl})`;
 
-    shareButton.addEventListener('click', async () => {
-      const t = I18N[LANG];
-      shareButton.textContent = t.saveImage.includes('Save') ? 'Preparing...' : '이미지 준비 중...';
-      shareButton.disabled = true;
-      try {
-        const captureArea = document.getElementById('capture-area');
-        const canvas = await html2canvas(captureArea, { useCORS: true, backgroundColor: null });
-        const imageUrl = canvas.toDataURL('image/png');
-        const downloadLink = document.getElementById('download-link');
-        downloadLink.href = imageUrl;
-        // 파일명도 언어에 맞게
-        downloadLink.download = LANG === 'ko' ? '나의_탄생화.png' : 'my_birth_flower.png';
-        modal.classList.remove('hidden');
-      } catch (err) {
-        console.error('Error capturing image:', err);
-        alert(LANG === 'ko' ? '이미지 저장에 실패했습니다. 잠시 후 다시 시도해주세요.' : 'Failed to prepare the image. Please try again.');
-      } finally {
-        shareButton.textContent = I18N[LANG].share;
-        shareButton.disabled = false;
-      }
-    });
+          // 궁합 섹션
+          const comp = document.getElementById('compatibility-section');
+          if (flowerData.goodMatch && flowerData.badMatch) {
+            document.getElementById('good-match-flower').textContent = flowerData.goodMatch;
+            document.getElementById('bad-match-flower').textContent = flowerData.badMatch;
+            comp.classList.remove('hidden');
+          } else {
+            comp.classList.add('hidden');
+          }
+
+          // 로딩 해제
+          loadingOverlay.classList.add('hidden');
+          resultContent.classList.remove('opacity-0');
+          showResultButton.disabled = false;
+        });
+        // ==================== /CLICK HANDLER (REPLACED) ====================
+
 
     document.getElementById('close-modal-button').addEventListener('click', () => {
       modal.classList.add('hidden');
