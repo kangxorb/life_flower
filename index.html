@@ -1,696 +1,108 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>나의 탄생화 알아보기</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Gowun Batang', serif;
-        }
-        /* 한지 질감 배경 */
-        .hanji-background {
-            background-color: #f3f0e8;
-            background-image:
-                linear-gradient(rgba(224, 213, 194, 0.3) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(224, 213, 194, 0.3) 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-        /* 전통 문양을 닮은 버튼 */
-        .korean-button {
-            background-color: #8c5b40; /* 깊은 갈색 */
-            color: #f3f0e8; /* 미색 */
-            border: 2px solid #5a3a29;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-        }
-        .korean-button:hover:not(:disabled) {
-            background-color: #a26a4a;
-            transform: translateY(-2px);
-            box-shadow: 4px 4px 8px rgba(0,0,0,0.2);
-        }
-        .korean-button:disabled {
-            background-color: #b0a191;
-            cursor: not-allowed;
-        }
-        /* 인스타그램 스토리 사이즈 (9:16) */
-        .story-size {
-            width: 100%;
-            max-width: 360px; /* 일반적인 모바일 화면 너비 */
-            aspect-ratio: 9 / 16;
-            margin: 0 auto;
-            position: relative;
-            overflow: hidden;
-            border-radius: 12px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-        .story-background {
-            background-size: cover;
-            background-position: center;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Life Flower</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    select, input, button {
+      margin: 5px;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    #result {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    #flower-image {
+      max-width: 300px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      margin-bottom: 10px;
+    }
+
+    #credit {
+      font-size: 14px;
+      color: #555;
+    }
+
+    #credit a {
+      color: #0070f3;
+      text-decoration: none;
+    }
+
+    #credit a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
-<body class="hanji-background min-h-screen flex items-center justify-center p-4">
+<body>
+  <h1>🌸 Life Flower 🌸</h1>
 
-    <!-- 시작 페이지 -->
-    <div id="start-page" class="w-full max-w-md text-center">
-        <h1 class="text-4xl md:text-5xl font-bold text-[#5a3a29] mb-3">나의 탄생화 알아보기</h1>
-        <p class="text-lg text-[#6d5d4b] mb-10">당신이 태어난 날에 숨겨진 특별한 의미를 찾아보세요.</p>
+  <!-- 언어 선택 -->
+  <label for="lang-select">언어 선택:</label>
+  <select id="lang-select">
+    <option value="ko">한국어</option>
+    <option value="en">English</option>
+  </select>
 
-        <div class="bg-[#fdfbf5] p-8 rounded-lg shadow-lg border border-[#dcd3c3]">
-            <div class="mb-6">
-                <label for="month" class="block text-left text-lg text-[#5a3a29] mb-2">태어난 달</label>
-                <select id="month" class="w-full p-3 bg-white border border-[#dcd3c3] rounded-md text-lg focus:outline-none focus:ring-2 focus:ring-[#8c5b40]">
-                    <!-- 월 옵션은 JS로 추가 -->
-                </select>
-            </div>
-            <div class="mb-8">
-                <label for="day" class="block text-left text-lg text-[#5a3a29] mb-2">태어난 날</label>
-                <select id="day" class="w-full p-3 bg-white border border-[#dcd3c3] rounded-md text-lg focus:outline-none focus:ring-2 focus:ring-[#8c5b40]">
-                    <!-- 일 옵션은 JS로 추가 -->
-                </select>
-            </div>
-            <button id="show-result-button" class="korean-button w-full py-4 text-xl font-bold rounded-lg">나의 탄생화 확인하기</button>
-        </div>
-    </div>
+  <!-- 꽃 이름 입력 -->
+  <input type="text" id="flower-input" placeholder="꽃 이름을 입력하세요" />
 
-    <!-- 결과 페이지 -->
-    <div id="result-page" class="hidden w-full max-w-md text-center">
-        <!-- 인스타 스토리 공유 영역 -->
-        <div id="capture-area" class="story-size bg-gray-200 flex flex-col justify-between p-8 text-center text-white">
-            <!-- 배경 이미지 영역 -->
-            <div id="result-background" class="absolute inset-0 story-background transition-all duration-500 ease-in-out"></div>
-            
-            <!-- 로딩 오버레이 -->
-            <div id="loading-overlay" class="hidden absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-20 transition-opacity duration-300">
-                <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-white"></div>
-                <p class="text-white mt-4 text-lg">민화 이미지를 생성 중입니다...</p>
-            </div>
+  <!-- 버튼 -->
+  <button id="generate-btn">이미지 불러오기</button>
 
-            <!-- 콘텐츠 영역 -->
-            <div id="result-content" class="z-10 relative opacity-0 transition-opacity duration-500 h-full flex flex-col justify-between">
-                <div>
-                    <div>
-                        <p id="result-date" class="text-xl opacity-80"></p>
-                        <h2 id="result-flower-name" class="text-4xl font-bold mt-1" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);"></h2>
-                    </div>
-                    <div class="mt-8">
-                        <p id="result-keywords" class="text-lg font-bold" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7);"></p>
-                        <p id="daily-zodiac" class="text-base opacity-90 mb-3" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7);"></p>
-                        <p id="result-description" class="text-base leading-relaxed bg-black bg-opacity-30 p-3 rounded-lg"></p>
-                    </div>
-                </div>
+  <!-- 결과 영역 -->
+  <div id="result">
+    <img id="flower-image" />
+    <p id="credit"></p>
+  </div>
 
-                <div>
-                    <div id="compatibility-section" class="hidden text-sm bg-black bg-opacity-30 p-3 rounded-lg">
-                        <div class="flex justify-around">
-                            <div>
-                                <p class="opacity-80">💚 잘 맞는 궁합</p>
-                                <p id="good-match-flower" class="font-bold text-base"></p>
-                            </div>
-                            <div>
-                                <p class="opacity-80">💔 아쉬운 궁합</p>
-                                <p id="bad-match-flower" class="font-bold text-base"></p>
-                            </div>
-                        </div>
-                    </div>
+  <script>
+    document.getElementById('generate-btn').addEventListener('click', async () => {
+      const flowerName = document.getElementById('flower-input').value;
+      const lang = document.getElementById('lang-select').value;
 
-                    <p class="mt-4 text-sm opacity-70">온기(溫技)</p>
-                </div>
-            </div>
-        </div>
+      if (!flowerName) {
+        alert('꽃 이름을 입력해주세요!');
+        return;
+      }
 
-        <div class="mt-6 flex flex-col space-y-3">
-             <button id="share-button" class="korean-button w-full py-3 text-lg font-bold rounded-lg">인스타그램에 공유하기</button>
-             <button id="retry-button" class="w-full py-3 text-lg font-bold rounded-lg bg-[#dcd3c3] text-[#5a3a29] hover:bg-[#c9bfad] transition">다시하기</button>
-        </div>
-    </div>
-    
-    <!-- 공유 안내 모달 -->
-    <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-        <div class="bg-[#fdfbf5] rounded-lg p-8 text-center max-w-sm w-full shadow-xl">
-            <h3 class="text-2xl font-bold text-[#5a3a29] mb-4">공유하는 방법</h3>
-            <p class="text-lg text-[#6d5d4b] mb-6">아래 버튼으로 이미지를 저장한 후,<br>인스타그램 스토리에 공유해보세요!</p>
-            <a id="download-link" href="#" download="나의_탄생화.png" class="korean-button w-full py-3 text-lg font-bold rounded-lg block mb-3">이미지 저장하기</a>
-            <button id="close-modal-button" class="w-full py-3 text-lg font-bold rounded-lg bg-[#dcd3c3] text-[#5a3a29] hover:bg-[#c9bfad] transition">닫기</button>
-        </div>
-    </div>
+      const res = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flowerName, lang }),
+      });
 
+      const data = await res.json();
 
-    <script>
-        const birthFlowers = {
-            '1-1': { name: '스노드롭', keywords: '#희망 #위안', description: '혹독한 겨울을 이겨내고 피어나는 당신은 주변에 희망을 주는 사람입니다.', goodMatch: '노랑 수선화', badMatch: '해바라기' },
-            '1-2': { name: '노랑 수선화', keywords: '#사랑에답하여', description: '따뜻한 마음으로 상대방의 사랑에 화답할 줄 아는 진실한 사람입니다.', goodMatch: '스노드롭', badMatch: '능소화' },
-            '1-3': { name: '사프란', keywords: '#후회없는청춘', description: '매 순간을 열정적으로 살아가며 후회 없는 청춘을 만들어가는 당신입니다.', goodMatch: '히아신스', badMatch: '석류' },
-            '1-4': { name: '히아신스', keywords: '#차분한사랑', description: '요란하지 않지만 깊고 은은하게, 차분한 사랑을 할 줄 아는 사람입니다.', goodMatch: '사프란', badMatch: '진달래' },
-            '1-5': { name: '서양톱풀', keywords: '#지도', description: '명확한 판단력과 통찰력으로 주변 사람들을 이끌어주는 리더십을 가졌습니다.', goodMatch: '흰 제비꽃', badMatch: '시스투스' },
-            '1-6': { name: '흰 제비꽃', keywords: '#순진무구한사랑', description: '순수하고 꾸밈없는 마음으로 사랑을 표현하는 순수한 영혼의 소유자입니다.', goodMatch: '서양톱풀', badMatch: '이끼' },
-            '1-7': { name: '튤립', keywords: '#실연', description: '아픔을 겪더라도, 그 경험을 통해 더 성숙하고 단단해지는 사람입니다.', goodMatch: '보랏빛 제비꽃', badMatch: '빨강 무늬 제라늄' },
-            '1-8': { name: '보랏빛 제비꽃', keywords: '#사랑', description: '사랑이라는 감정을 무엇보다 소중히 여기며, 온 마음을 다해 사랑합니다.', goodMatch: '튤립', badMatch: '협죽도' },
-            '1-9': { name: '노랑 제비꽃', keywords: '#수줍은사랑', description: '마음을 쉽게 표현하지는 못하지만, 수줍음 속에 진실한 사랑을 품고 있습니다.', goodMatch: '회양목', badMatch: '골든 로드' },
-            '1-10': { name: '회양목', keywords: '#참고견뎌냄', description: '어떤 어려움이 닥쳐도 묵묵히 참고 견뎌내며 결국 이겨내는 힘이 있습니다.', goodMatch: '노랑 제비꽃', badMatch: '저먼더' },
-            '1-11': { name: '측백나무', keywords: '#견고한우정', description: '한 번 맺은 인연을 소중히 여기며 변치 않는 견고한 우정을 나눕니다.', goodMatch: '향기 알리섬', badMatch: '해바라기' },
-            '1-12': { name: '향기 알리섬', keywords: '#빼어난미모', description: '외면과 내면의 아름다움이 조화를 이루어 사람들의 시선을 사로잡습니다.', goodMatch: '측백나무', badMatch: '타마린드' },
-            '1-13': { name: '수선화', keywords: '#신비', description: '속마음을 쉽게 드러내지 않아 신비로운 매력을 풍기는 사람입니다.', goodMatch: '시클라멘', badMatch: '튤립나무' },
-            '1-14': { name: '시클라멘', keywords: '#내성적성격', description: '조용하고 내성적이지만, 그 안에 누구보다 깊고 풍부한 감성을 지니고 있습니다.', goodMatch: '수선화', badMatch: '접시꽃' },
-            '1-15': { name: '가시', keywords: '#엄격', description: '자신과 타인에게 엄격한 기준을 가지고 있지만, 그만큼 책임감이 강합니다.', goodMatch: '노랑 히아신스', badMatch: '로사 캠피온' },
-            '1-16': { name: '노랑 히아신스', keywords: '#승부', description: '목표를 향한 강한 승부욕을 가지고 있으며, 도전을 두려워하지 않습니다.', goodMatch: '가시', badMatch: '프리지아' },
-            '1-17': { name: '수영', keywords: '#친근한정', description: '누구에게나 다정하고 친근하게 다가가 따뜻한 정을 나누는 사람입니다.', goodMatch: '어저귀', badMatch: '짚신나물' },
-            '1-18': { name: '어저귀', keywords: '#억측', description: '섣부른 판단이나 억측을 경계하며, 모든 것을 신중하게 생각합니다.', goodMatch: '수영', badMatch: '스피리아' },
-            '1-19': { name: '소나무', keywords: '#불로장수', description: '늘 푸른 소나무처럼 건강하고 활기찬 에너지로 가득한 사람입니다.', goodMatch: '미나리아재비', badMatch: '서양종 보리수' },
-            '1-20': { name: '미나리아재비', keywords: '#천진난만', description: '아이처럼 순수하고 천진난만한 매력으로 주변을 밝게 만듭니다.', goodMatch: '소나무', badMatch: '금잔화' },
-            '1-21': { name: '담쟁이덩굴', keywords: '#우정', description: '한번 뿌리내리면 변치 않는 담쟁이덩굴처럼 깊은 우정을 중요시합니다.', goodMatch: '이끼', badMatch: '안스륨' },
-            '1-22': { name: '이끼', keywords: '#모성애', description: '주변 사람들을 따뜻하게 보살피고 감싸주는 깊은 모성애를 가졌습니다.', goodMatch: '담쟁이덩굴', badMatch: '하이포시스 오리어' },
-            '1-23': { name: '부들', keywords: '#순종', description: '부드러운 마음으로 다른 사람의 의견을 존중하고 따를 줄 아는 사람입니다.', goodMatch: '가을에 피는 사프란', badMatch: '오미자' },
-            '1-24': { name: '가을에 피는 사프란', keywords: '#절도의미', description: '화려함 속에서도 절제할 줄 아는, 내면의 아름다움을 가진 사람입니다.', goodMatch: '부들', badMatch: '에린지움' },
-            '1-25': { name: '점나도나물', keywords: '#순진', description: '세상 물정에 때묻지 않은 순수하고 깨끗한 마음을 간직하고 있습니다.', goodMatch: '미모사', badMatch: '꽃담배' },
-            '1-26': { name: '미모사', keywords: '#예민한마음', description: '섬세하고 예민한 감수성을 지녀 작은 것에서도 깊은 감동을 느낍니다.', goodMatch: '점나도나물', badMatch: '저먼더' },
-            '1-27': { name: '마가목', keywords: '#게으름없는마음', description: '맡은 바를 성실하게 해내는 부지런함과 책임감을 동시에 갖췄습니다.', goodMatch: '검은 포플라', badMatch: '토끼풀' },
-            '1-28': { name: '검은 포플라', keywords: '#용기', description: '어려움 앞에서도 물러서지 않고 맞서는 용기를 가진 사람입니다.', goodMatch: '마가목', badMatch: '호랑이꽃' },
-            '1-29': { name: '이끼', keywords: '#모성애', description: '포근한 이끼처럼 주변을 감싸 안는 따뜻하고 깊은 마음의 소유자입니다.', goodMatch: '매쉬 메리골드', badMatch: '멕시칸 아이비' },
-            '1-30': { name: '매쉬 메리골드', keywords: '#반드시올행복', description: '긍정적인 마음으로, 반드시 찾아올 행복을 믿고 기다릴 줄 아는 사람입니다.', goodMatch: '이끼', badMatch: '과꽃' },
-            '1-31': { name: '노란 사프란', keywords: '#청춘의환희', description: '밝고 활기찬 에너지로 청춘의 기쁨을 마음껏 누리는 사람입니다.', goodMatch: '앵초', badMatch: '용담' },
-            '2-1': { name: '앵초', keywords: '#젊은시절과고뇌', description: '젊은 날의 고뇌를 통해 더욱 깊고 성숙한 사람으로 성장합니다.', goodMatch: '모과', badMatch: '흰색 국화' },
-            '2-2': { name: '모과', keywords: '#평범', description: '화려하지는 않지만 묵묵히 자신의 자리를 지키는 평범함 속의 특별함을 가졌습니다.', goodMatch: '앵초', badMatch: '칼라' },
-            '2-3': { name: '황새냉이', keywords: '#그대에게바친다', description: '자신이 가진 소중한 것을 아낌없이 내어줄 줄 아는 헌신적인 사람입니다.', goodMatch: '빨간 앵초', badMatch: '샤프란' },
-            '2-4': { name: '빨간 앵초', keywords: '#돌보지않는아름다움', description: '꾸미지 않아도 자연스럽게 빛나는, 본연의 아름다움을 지니고 있습니다.', goodMatch: '황새냉이', badMatch: '네리네' },
-            '2-5': { name: '양치', keywords: '#사랑스러움', description: '작은 행동 하나하나에 사랑스러움이 배어있어 주변을 미소 짓게 만듭니다.', goodMatch: '바위솔', badMatch: '헤더' },
-            '2-6': { name: '바위솔', keywords: '#가사에근면', description: '자신에게 주어진 일을 성실하고 꾸준하게 해내는 근면한 사람입니다.', goodMatch: '양치', badMatch: '아르메리아' },
-            '2-7': { name: '물망초', keywords: '#나를잊지말아요', description: '한 번 맺은 인연을 깊고 소중하게 생각하는, 기억에 오래 남는 사람입니다.', goodMatch: '범의귀', badMatch: '뷰글라스' },
-            '2-8': { name: '범의귀', keywords: '#절실한애정', description: '사랑에 있어 누구보다 진실하고 절실한 마음으로 상대를 대합니다.', goodMatch: '물망초', badMatch: '에리카' },
-            '2-9': { name: '은매화', keywords: '#사랑의속삭임', description: '달콤하고 부드러운 말로 사랑을 속삭일 줄 아는 로맨티스트입니다.', goodMatch: '서향', badMatch: '산쑥' },
-            '2-10': { name: '서향', keywords: '#영광', description: '자신의 분야에서 뛰어난 재능을 발휘하여 영광스러운 성취를 이룹니다.', goodMatch: '은매화', badMatch: '나팔꽃' },
-            '2-11': { name: '멜리사', keywords: '#동정', description: '다른 사람의 아픔에 깊이 공감하고 따뜻한 위로를 건넬 줄 아는 사람입니다.', goodMatch: '쥐꼬리망초', badMatch: '꽈리' },
-            '2-12': { name: '쥐꼬리망초', keywords: '#가련미의극치', description: '보호해주고 싶은 마음을 불러일으키는 섬세하고 가련한 아름다움을 가졌습니다.', goodMatch: '멜리사', badMatch: '파초' },
-            '2-13': { name: '갈풀', keywords: '#끈기', description: '어떤 어려움에도 쉽게 꺾이지 않는 강한 생명력과 끈기를 지녔습니다.', goodMatch: '카모마일', badMatch: '오렌지' },
-            '2-14': { name: '카모마일', keywords: '#역경에굴하지않는강인함', description: '어떤 어려움 속에서도 평온함을 잃지 않는 강인한 내면을 가졌군요.', goodMatch: '갈풀', badMatch: '레몬' },
-            '2-15': { name: '삼나무', keywords: '#그대를위해살다', description: '자신보다 사랑하는 사람을 위해 헌신하고 희생할 줄 아는 사람입니다.', goodMatch: '월계수', badMatch: '포도' },
-            '2-16': { name: '월계수', keywords: '#명예', description: '자신의 신념과 원칙을 지키며, 그 어떤 것보다 명예를 소중히 여깁니다.', goodMatch: '삼나무', badMatch: '사과' },
-            '2-17': { name: '야생화', keywords: '#친숙한자연', description: '꾸밈없고 소박한 모습으로 주변에 편안함을 주는 자연스러운 사람입니다.', goodMatch: '미나리아재비', badMatch: '무궁화' },
-            '2-18': { name: '미나리아재비', keywords: '#천진난만함', description: '순수하고 계산 없는 마음으로 세상을 바라보는 천진난만한 매력이 있습니다.', goodMatch: '야생화', badMatch: '자작나무' },
-            '2-19': { name: '떡갈나무', keywords: '#붙임성좋음', description: '누구와도 쉽게 어울리는 특유의 붙임성으로 주변에 사람이 많습니다.', goodMatch: '칼미아', badMatch: '포플라' },
-            '2-20': { name: '칼미아', keywords: '#커다란희망', description: '어떤 상황에서도 긍정적인 태도를 잃지 않고 더 나은 미래를 꿈꿉니다.', goodMatch: '떡갈나무', badMatch: '매화' },
-            '2-21': { name: '네모필라', keywords: '#애국심', description: '자신이 속한 공동체를 사랑하고, 그 발전을 위해 기여하고자 합니다.', goodMatch: '무궁화', badMatch: '벚꽃' },
-            '2-22': { name: '무궁화', keywords: '#섬세한아름다움', description: '겉보기에는 강해 보이지만, 내면에는 누구보다 섬세한 아름다움을 간직하고 있습니다.', goodMatch: '네모필라', badMatch: '해당화' },
-            '2-23': { name: '살구꽃', keywords: '#아가씨의수줍음', description: '수줍음이 많지만, 그 모습마저도 사랑스러운 매력으로 다가옵니다.', goodMatch: '빙카', badMatch: '모란' },
-            '2-24': { name: '빙카', keywords: '#즐거운추억', description: '과거의 아름다운 추억을 소중히 간직하며 살아가는 힘을 얻습니다.', goodMatch: '살구꽃', badMatch: '작약' },
-            '2-25': { name: '사향장미', keywords: '#변덕스러운사랑', description: '사랑에 있어 예측할 수 없는, 통통 튀는 매력을 가진 사람입니다.', goodMatch: '아도니스', badMatch: '철쭉' },
-            '2-26': { name: '아도니스', keywords: '#추억', description: '지나간 시간을 아름답게 기억하고, 그 속에서 현재의 의미를 찾습니다.', goodMatch: '사향장미', badMatch: '진달래' },
-            '2-27': { name: '아라비아의 별', keywords: '#순수', description: '티 없이 맑고 깨끗한 영혼으로 세상을 순수하게 바라봅니다.', goodMatch: '보리', badMatch: '개나리' },
-            '2-28': { name: '보리', keywords: '#일치단결', description: '혼자보다는 함께일 때 더 큰 힘을 발휘하며, 조화를 중요시합니다.', goodMatch: '아라비아의 별', badMatch: '목련' },
-            '2-29': { name: '아르메리아', keywords: '#배려', description: '자신보다 다른 사람을 먼저 생각하고 챙기는 깊은 배려심을 가졌습니다.', goodMatch: '앵초', badMatch: '산수유' },
-            '3-1': { name: '수선화', keywords: '#자존심', description: '자신에 대한 강한 믿음과 자부심을 가지고 당당하게 살아갑니다.', goodMatch: '미나리아재비', badMatch: '스위트피' },
-            '3-2': { name: '미나리아재비', keywords: '#아름다운인격', description: '외면의 아름다움을 넘어, 내면의 성숙함으로 빛나는 인격을 지녔습니다.', goodMatch: '수선화', badMatch: '장미' },
-            '3-3': { name: '자운영', keywords: '#나의행복', description: '타인의 시선보다 자기 자신의 행복을 가장 소중히 여길 줄 아는 사람입니다.', goodMatch: '나무딸기', badMatch: '백합' },
-            '3-4': { name: '나무딸기', keywords: '#애정', description: '사랑하는 사람에게 깊은 애정을 아낌없이 표현하고 나눕니다.', goodMatch: '자운영', badMatch: '카네이션' },
-            '3-5': { name: '수레국화', keywords: '#행복감', description: '일상의 작은 순간들 속에서 소소한 행복을 발견할 줄 아는 사람입니다.', goodMatch: '데이지', badMatch: '프리지아' },
-            '3-6': { name: '데이지', keywords: '#명랑', description: '밝고 긍정적인 에너지로 주변 사람들에게 웃음과 활기를 전파합니다.', goodMatch: '수레국화', badMatch: '안개꽃' },
-            '3-7': { name: '황새냉이', keywords: '#사무치는그리움', description: '지나간 인연이나 추억을 마음속 깊이 간직하며 그리워할 줄 압니다.', goodMatch: '밤꽃', badMatch: '국화' },
-            '3-8': { name: '밤꽃', keywords: '#진심', description: '가식이나 꾸밈없이, 언제나 진실된 마음으로 사람을 대합니다.', goodMatch: '황새냉이', badMatch: '코스모스' },
-            '3-9': { name: '낙엽송', keywords: '#대담', description: '실패를 두려워하지 않고, 새로운 것에 과감하게 도전하는 대담함을 가졌습니다.', goodMatch: '느릅나무', badMatch: '해바라기' },
-            '3-10': { name: '느릅나무', keywords: '#신뢰', description: '언행이 일치하고 책임감이 강해 주변 사람들로부터 깊은 신뢰를 받습니다.', goodMatch: '낙엽송', badMatch: '나팔꽃' },
-            '3-11': { name: '씀바귀', keywords: '#순박함', description: '소박하고 꾸밈없는 모습으로 진실된 매력을 발산하는 사람입니다.', goodMatch: '수양버들', badMatch: '봉선화' },
-            '3-12': { name: '수양버들', keywords: '#사랑의슬픔', description: '사랑으로 인한 깊은 슬픔을 이해하고, 그 아픔을 통해 성장합니다.', goodMatch: '씀바귀', badMatch: '채송화' },
-            '3-13': { name: '산옥잠화', keywords: '#사랑의망각', description: '지나간 사랑의 아픔은 잊고, 새로운 사랑을 향해 나아갈 줄 아는 용기가 있습니다.', goodMatch: '아몬드', badMatch: '분꽃' },
-            '3-14': { name: '아몬드', keywords: '#진실한사랑', description: '달콤한 말보다는 행동으로, 진실된 사랑을 보여주는 사람입니다.', goodMatch: '산옥잠화', badMatch: '맨드라미' },
-            '3-15': { name: '독당근', keywords: '#죽음도아깝지않음', description: '자신이 믿는 가치나 사랑을 위해 모든 것을 바칠 수 있는 열정을 가졌습니다.', goodMatch: '박하', badMatch: '과꽃' },
-            '3-16': { name: '박하', keywords: '#미덕', description: '올바른 마음가짐과 행동으로 주변에 좋은 영향을 끼치는 덕을 갖췄습니다.', goodMatch: '독당근', badMatch: '천일홍' },
-            '3-17': { name: '콩꽃', keywords: '#반드시올행복', description: '지금은 힘들더라도, 언젠가 반드시 행복이 찾아올 것이라는 희망을 잃지 않습니다.', goodMatch: '아스파라거스', badMatch: '칸나' },
-            '3-18': { name: '아스파라거스', keywords: '#무변화', description: '주변 환경의 변화에도 흔들리지 않고, 자신의 페이스를 꿋꿋이 지켜나갑니다.', goodMatch: '콩꽃', badMatch: '글라디올러스' },
-            '3-19': { name: '치자나무', keywords: '#한없는즐거움', description: '삶의 모든 순간에서 즐거움을 찾아내고, 긍정적인 에너지로 가득합니다.', goodMatch: '튤립', badMatch: '달리아' },
-            '3-20': { name: '튤립', keywords: '#사랑의고백 #영원한애정', description: '따뜻한 마음으로 진실한 사랑을 표현할 줄 아는 로맨티스트입니다.', goodMatch: '치자나무', badMatch: '메리골드' },
-            '3-21': { name: '벚꽃난', keywords: '#인생의출발', description: '언제나 새로운 시작을 두려워하지 않으며, 설레는 마음으로 도전합니다.', goodMatch: '당아욱', badMatch: '아게라텀' },
-            '3-22': { name: '당아욱', keywords: '#은혜', description: '자신이 받은 도움이나 사랑을 잊지 않고, 언젠가 반드시 보답하려 합니다.', goodMatch: '벚꽃난', badMatch: '한련' },
-            '3-23': { name: '글라디올러스', keywords: '#정열적인사랑', description: '사랑에 빠지면 모든 것을 다 바칠 만큼 뜨겁고 정열적인 사랑을 합니다.', goodMatch: '금영화', badMatch: '샐비어' },
-            '3-24': { name: '금영화', keywords: '#희망', description: '어두운 상황 속에서도 한 줄기 빛과 같은 희망을 발견해내는 긍정의 아이콘입니다.', goodMatch: '글라디올러스', badMatch: '백일홍' },
-            '3-25': { name: '덩굴성 식물', keywords: '#아름다운매력', description: '자연스럽게 뻗어 나가는 덩굴처럼, 얽매이지 않는 자유로운 매력을 가졌습니다.', goodMatch: '흰앵초', badMatch: '페튜니아' },
-            '3-26': { name: '흰앵초', keywords: '#첫사랑', description: '풋풋하고 순수했던 첫사랑의 기억을 마음속에 소중히 간직하고 있습니다.', goodMatch: '덩굴성 식물', badMatch: '금잔화' },
-            '3-27': { name: '칼세올라리아', keywords: '#도움', description: '어려움에 처한 사람을 보면 그냥 지나치지 못하고, 기꺼이 손을 내밉니다.', goodMatch: '꽃아카시아나무', badMatch: '금어초' },
-            '3-28': { name: '꽃아카시아나무', keywords: '#품위', description: '말과 행동 하나하나에 기품이 서려있어, 고상한 분위기를 자아냅니다.', goodMatch: '칼세올라리아', badMatch: '시클라멘' },
-            '3-29': { name: '우엉', keywords: '#괴롭히지말아요', description: '여린 내면을 가지고 있어, 상처받는 것을 두려워하는 섬세한 사람입니다.', goodMatch: '금작화', badMatch: '포인세티아' },
-            '3-30': { name: '금작화', keywords: '#청초', description: '맑고 깨끗한 분위기로, 보는 사람의 마음까지 정화시키는 매력이 있습니다.', goodMatch: '우엉', badMatch: '칼랑코에' },
-            '3-31': { name: '흑종초', keywords: '#꿈길의사랑', description: '현실에 얽매이지 않고, 꿈처럼 이상적이고 아름다운 사랑을 추구합니다.', goodMatch: '아몬드', badMatch: '군자란' },
-            '4-1': { name: '아몬드', keywords: '#희망', description: '새로운 시작을 앞두고 설레는 희망으로 가득 찬, 긍정적인 에너지를 가졌습니다.', goodMatch: '아네모네', badMatch: '해바라기' },
-            '4-2': { name: '아네모네', keywords: '#기대', description: '미래에 대한 밝은 기대를 품고, 희망찬 내일을 향해 나아갑니다.', goodMatch: '아몬드', badMatch: '코스모스' },
-            '4-3': { name: '나팔수선화', keywords: '#존경', description: '자신이 가진 재능과 노력으로 주변 사람들로부터 존경과 인정을 받습니다.', goodMatch: '빨강 아네모네', badMatch: '국화' },
-            '4-4': { name: '빨강 아네모네', keywords: '#그대를사랑해', description: '자신의 마음을 솔직하고 열정적으로 표현할 줄 아는 용기 있는 사람입니다.', goodMatch: '나팔수선화', badMatch: '상사화' },
-            '4-5': { name: '무화과', keywords: '#풍요', description: '풍성한 결실을 맺는 무화과처럼 당신의 삶은 늘 풍요로울 것입니다.', goodMatch: '아도니스', badMatch: '꽃무릇' },
-            '4-6': { name: '아도니스', keywords: '#영원한행복', description: '순간의 기쁨이 아닌, 변치 않는 영원한 행복을 추구하는 사람입니다.', goodMatch: '무화과', badMatch: '벌개미취' },
-            '4-7': { name: '공작고사리', keywords: '#신뢰', description: '한결같은 모습으로 주변 사람들에게 믿음을 주며, 깊은 신뢰 관계를 맺습니다.', goodMatch: '금작화', badMatch: '구절초' },
-            '4-8': { name: '금작화', keywords: '#박애', description: '특정 대상에 국한되지 않고, 모든 생명을 사랑하는 넓은 마음을 가졌습니다.', goodMatch: '공작고사리', badMatch: '쑥부쟁이' },
-            '4-9': { name: '벚나무', keywords: '#정신의아름다움', description: '화려한 외면보다 내면의 성숙함과 정신의 아름다움을 더 중요하게 생각합니다.', goodMatch: '빙카', badMatch: '감국' },
-            '4-10': { name: '빙카', keywords: '#우정', description: '친구와의 의리를 소중히 여기며, 변치 않는 우정을 지켜나갑니다.', goodMatch: '벚나무', badMatch: '산국' },
-            '4-11': { name: '꽃고비', keywords: '#와주세요', description: '혼자 있기보다는 사람들과 어울리는 것을 좋아하며, 만남을 소중히 여깁니다.', goodMatch: '복사꽃', badMatch: '동백' },
-            '4-12': { name: '복사꽃', keywords: '#사랑의노예', description: '사랑에 빠지면 상대방에게 모든 것을 헌신하는 지고지순한 사랑을 합니다.', goodMatch: '꽃고비', badMatch: '수선화' },
-            '4-13': { name: '페르시아 국화', keywords: '#경쟁심', description: '자신을 발전시키는 건전한 경쟁을 즐기며, 이를 통해 성장하는 타입입니다.', goodMatch: '흰나팔꽃', badMatch: '매화' },
-            '4-14': { name: '흰나팔꽃', keywords: '#넘치는기쁨', description: '긍정적인 에너지로 가득 차 있어, 주변에 기쁨과 활력을 불어넣습니다.', goodMatch: '페르시아 국화', badMatch: '산수유' },
-            '4-15': { name: '펜 오키드', keywords: '#훌륭함', description: '자신이 맡은 분야에서 뛰어난 재능과 실력을 발휘하여 두각을 나타냅니다.', goodMatch: '튤립', badMatch: '히아신스' },
-            '4-16': { name: '튤립', keywords: '#아름다운눈동자', description: '맑고 깊은 눈동자로 상대를 바라보며, 진실된 마음을 전달하는 매력이 있습니다.', goodMatch: '펜 오키드', badMatch: '크로커스' },
-            '4-17': { name: '독일 창포', keywords: '#결혼', description: '안정적이고 행복한 가정을 꾸리는 것을 삶의 중요한 가치로 생각합니다.', goodMatch: '자운영', badMatch: '프리지아' },
-            '4-18': { name: '자운영', keywords: '#감화', description: '따뜻한 마음과 긍정적인 행동으로 주변 사람들을 좋은 방향으로 변화시킵니다.', goodMatch: '독일 창포', badMatch: '이베리스' },
-            '4-19': { name: '참제비고깔', keywords: '#청명', description: '가을 하늘처럼 맑고 깨끗한 마음으로 세상을 바라보는 순수함을 지녔습니다.', goodMatch: '배나무', badMatch: '무스카리' },
-            '4-20': { name: '배나무', keywords: '#온화한애정', description: '뜨겁지는 않지만, 따뜻하고 온화한 애정으로 상대를 편안하게 해줍니다.', goodMatch: '참제비고깔', badMatch: '알리움' },
-            '4-21': { name: '수양버들', keywords: '#내마음의슬픔', description: '겉으로 표현하지 않아도, 마음속 깊은 곳에 자신만의 슬픔을 간직하고 있습니다.', goodMatch: '과꽃', badMatch: '히비스커스' },
-            '4-22': { name: '과꽃', keywords: '#믿음직한사랑', description: '변덕스럽지 않고, 한결같은 마음으로 상대에게 믿음을 주는 사랑을 합니다.', goodMatch: '수양버들', badMatch: '부겐빌레아' },
-            '4-23': { name: '도라지', keywords: '#따뜻한애정', description: '차가워 보이는 겉모습과 달리, 속은 누구보다 따뜻한 애정으로 가득 차 있습니다.', goodMatch: '제라늄', badMatch: '란타나' },
-            '4-24': { name: '제라늄', keywords: '#결심', description: '한 번 마음먹은 일은 반드시 해내고야 마는 강한 의지와 결단력을 가졌습니다.', goodMatch: '도라지', badMatch: '플루메리아' },
-            '4-25': { name: '중국 패모', keywords: '#위엄', description: '쉽게 다가갈 수 없는 특유의 기품과 위엄으로 사람들을 압도합니다.', goodMatch: '논냉이', badMatch: '자카란다' },
-            '4-26': { name: '논냉이', keywords: '#불타는애정', description: '사랑에 있어 누구보다 뜨겁고 열정적인 마음으로 모든 것을 쏟아붓습니다.', goodMatch: '중국 패모', badMatch: '일랑일랑' },
-            '4-27': { name: '수련', keywords: '#청순한마음', description: '진흙 속에서 피어나도 더러움에 물들지 않는, 맑고 청순한 마음의 소유자입니다.', goodMatch: '빨간 앵초', badMatch: '치자' },
-            '4-28': { name: '빨간 앵초', keywords: '#비할바없는아름다움', description: '다른 무엇과도 비교할 수 없는, 자신만의 독보적인 아름다움을 뽐냅니다.', goodMatch: '수련', badMatch: '자스민' },
-            '4-29': { name: '동백나무', keywords: '#매력', description: '치명적인 매력으로 한번 보면 잊을 수 없는 깊은 인상을 남깁니다.', goodMatch: '금사슬나무', badMatch: '오렌지자스민' },
-            '4-30': { name: '금사슬나무', keywords: '#슬픈아름다움', description: '화려한 아름다움 뒤에 어딘가 모를 슬픔을 간직하고 있어, 더욱 마음이 갑니다.', goodMatch: '동백나무', badMatch: '클레마티스' },
-            "5-1": { name: "카우슬립 앵초", keywords: "#젊은날의슬픔", description: "젊은 시절 겪었던 아픔을 딛고 일어나, 더욱 단단하고 성숙한 사람으로 거듭납니다.", goodMatch: "미나리아재비", badMatch: "글라디올러스" },
-            "5-2": { name: "미나리아재비", keywords: "#조화", description: "어느 한쪽에 치우치지 않고, 모든 것과 조화를 이루려는 균형감각이 뛰어납니다.", goodMatch: "카우슬립 앵초", badMatch: "달리아" },
-            "5-3": { name: "민들레", keywords: "#신탁", description: "중요한 순간에 놀라운 직관과 통찰력으로 올바른 길을 선택합니다.", goodMatch: "딸기", badMatch: "칸나" },
-            "5-4": { name: "딸기", keywords: "#존중과애정", description: "상대방을 있는 그대로 존중하며, 따뜻한 애정을 기반으로 관계를 맺습니다.", goodMatch: "민들레", badMatch: "샐비어" },
-            "5-5": { name: "은방울꽃", keywords: "#섬세함", description: "남들이 쉽게 지나치는 작은 부분까지 포착하는 예리하고 섬세한 감각을 지녔습니다.", goodMatch: "비단향나무꽃", badMatch: "메리골드" },
-            "5-6": { name: "비단향나무꽃", keywords: "#영원한아름다움", description: "시간이 흘러도 변치 않는, 자신만의 고유한 아름다움을 간직하고 있습니다.", goodMatch: "은방울꽃", badMatch: "천일홍" },
-            "5-7": { name: "딸기잎", keywords: "#사랑과존경", description: "사랑하는 사람을 깊이 존경하며, 서로에게 긍정적인 영향을 주는 관계를 추구합니다.", goodMatch: "수련", badMatch: "맨드라미" },
-            "5-8": { name: "수련", keywords: "#결백", description: "어떤 오해나 유혹 속에서도 자신의 순수함과 결백함을 지켜낼 힘이 있습니다.", goodMatch: "딸기잎", badMatch: "한련" },
-            "5-9": { name: "겹벚꽃", keywords: "#정숙", description: "화려함 속에서도 차분하고 단아한 태도를 잃지 않는 매력적인 사람입니다.", goodMatch: "라일락", badMatch: "페튜니아" },
-            "5-10": { name: "라일락", keywords: "#친구의사랑", description: "연인 같은 설렘과 가족 같은 편안함을 동시에 주는, 친구 같은 사랑을 합니다.", goodMatch: "겹벚꽃", badMatch: "금잔화" },
-            "5-11": { name: "사과", keywords: "#유혹", description: "거부할 수 없는 매력으로 주변 사람들의 마음을 사로잡는 능력이 있습니다.", goodMatch: "라일락", badMatch: "금어초" },
-            "5-12": { name: "라일락", keywords: "#사랑의싹", description: "작은 관심에서 시작된 사랑의 감정을 소중하게 키워나갈 줄 아는 사람입니다.", goodMatch: "사과", badMatch: "시클라멘" },
-            "5-13": { name: "산사나무", keywords: "#유일한사랑", description: "한 사람만을 마음에 품고, 오직 그 사람에게만 모든 사랑을 쏟아붓습니다.", goodMatch: "매발톱꽃", badMatch: "포인세티아" },
-            "5-14": { name: "매발톱꽃", keywords: "#승리의맹세", description: "목표를 향해 나아갈 때, 반드시 이기겠다는 강한 의지와 신념을 가집니다.", goodMatch: "산사나무", badMatch: "칼랑코에" },
-            "5-15": { name: "물망초", keywords: "#진실한사랑", description: "당신이 맺은 소중한 인연은 오래도록 기억되고 진실하게 이어집니다.", goodMatch: "조팝나무", badMatch: "군자란" },
-            "5-16": { name: "조팝나무", keywords: "#선언", description: "자신의 생각이나 감정을 망설임 없이, 당당하고 솔직하게 표현합니다.", goodMatch: "물망초", badMatch: "베고니아" },
-            "5-17": { name: "노랑 튤립", keywords: "#사랑의표시", description: "따뜻하고 밝은 에너지로, 상대방에게 사랑의 마음을 명확하게 전달합니다.", goodMatch: "옥슬립 앵초", badMatch: "아마릴리스" },
-            "5-18": { name: "옥슬립 앵초", keywords: "#첫사랑", description: "풋풋하고 설레었던 첫사랑의 순수한 감정을 마음속에 간직하고 살아갑니다.", goodMatch: "노랑 튤립", badMatch: "글록시니아" },
-            "5-19": { name: "아리스타타", keywords: "#아름다움의소유자", description: "타고난 아름다움과 세련된 감각으로 어디서나 주목받는 사람입니다.", goodMatch: "괭이밥", badMatch: "게발선인장" },
-            "5-20": { name: "괭이밥", keywords: "#빛나는마음", description: "어둠 속에서도 희망을 잃지 않는, 보석처럼 빛나는 마음을 가졌습니다.", goodMatch: "아리스타타", badMatch: "시네라리아" },
-            "5-21": { name: "담홍색 참제비고깔", keywords: "#자유", description: "어떤 것에도 얽매이지 않고, 자신의 의지대로 살아가는 자유로운 영혼입니다.", goodMatch: "귀고리꽃", badMatch: "프리뮬러" },
-            "5-22": { name: "귀고리꽃", keywords: "#열렬한마음", description: "좋아하는 것이나 사람에게 온 마음을 다해 열정을 쏟아붓는 타입입니다.", goodMatch: "담홍색 참제비고깔", badMatch: "덴드로비움" },
-            "5-23": { name: "풀의 싹", keywords: "#첫사랑의추억", description: "갓 돋아난 새싹처럼 순수하고 설레었던 첫사랑의 기억을 소중히 여깁니다.", goodMatch: "헬리오트로프", badMatch: "심비디움" },
-            "5-24": { name: "헬리오트로프", keywords: "#사랑이여영원하라", description: "한 번 시작된 사랑이 영원히 지속되기를 바라는 낭만적인 마음을 가졌습니다.", goodMatch: "풀의 싹", badMatch: "팔레놉시스" },
-            "5-25": { name: "삼색제비꽃", keywords: "#순애", description: "오직 한 사람만을 향한 순수하고 지고지순한 사랑을 간직하고 있습니다.", goodMatch: "아카시아나무", badMatch: "온시디움" },
-            "5-26": { name: "아카시아나무", keywords: "#우정", description: "친구와의 의리를 무엇보다 중요하게 생각하며, 깊은 우정을 나눕니다.", goodMatch: "삼색제비꽃", badMatch: "카틀레야" },
-            "5-27": { name: "데이지", keywords: "#순수한마음", description: "계산적이거나 꾸미지 않고, 있는 그대로의 순수한 마음으로 세상을 대합니다.", goodMatch: "박하", badMatch: "파피오페딜룸" },
-            "5-28": { name: "박하", keywords: "#덕", description: "바르고 선한 마음씨로 주변 사람들에게 좋은 영향을 끼치는 덕망 있는 사람입니다.", goodMatch: "데이지", badMatch: "반다" },
-            "5-29": { name: "토끼풀", keywords: "#쾌활", description: "언제나 밝고 명랑한 에너지로 주변 분위기를 즐겁게 만드는 매력이 있습니다.", goodMatch: "보라색 라일락", badMatch: "덴파레" },
-            "5-30": { name: "보라색 라일락", keywords: "#사랑의첫감정", description: "사랑이 시작될 때의 설레고 풋풋한 감정을 가장 소중하게 생각합니다.", goodMatch: "토끼풀", badMatch: "실라" },
-            "5-31": { name: "무릇", keywords: "#강한자제력", description: "어떤 유혹이나 충동 앞에서도 자신을 컨트롤할 수 있는 강한 자제력을 지녔습니다.", goodMatch: "장미", badMatch: "스파티필룸" },
-            "6-1": { name: "장미", keywords: "#나의마음은그대만이아네", description: "오직 한 사람에게만 자신의 진심을 보여주는, 깊고 은밀한 사랑을 합니다.", goodMatch: "빨강 매발톱꽃", badMatch: "안스륨" },
-            "6-2": { name: "빨강 매발톱꽃", keywords: "#솔직", description: "자신의 감정이나 생각을 숨기지 않고, 언제나 솔직하고 담백하게 표현합니다.", goodMatch: "장미", badMatch: "구즈마니아" },
-            "6-3": { name: "아마", keywords: "#책임", description: "자신이 한 말이나 행동에 대해 끝까지 책임지려는 강한 책임감을 가졌습니다.", goodMatch: "장미", badMatch: "브로멜리아드" },
-            "6-4": { name: "장미", keywords: "#사랑", description: "삶에서 사랑이라는 가치를 가장 중요하게 생각하며, 사랑을 통해 성장합니다.", goodMatch: "아마", badMatch: "틸란드시아" },
-            "6-5": { name: "메리골드", keywords: "#가련한애정", description: "상대방의 아픔까지도 보듬어 안는, 깊고 애틋한 사랑을 할 줄 아는 사람입니다.", goodMatch: "노랑붓꽃", badMatch: "네오레겔리아" },
-            "6-6": { name: "노랑붓꽃", keywords: "#믿는자의행복", description: "사랑하는 사람을 온전히 믿음으로써 진정한 행복을 느끼는 타입입니다.", goodMatch: "메리골드", badMatch: "에크메아" },
-            "6-7": { name: "슈미트티아나", keywords: "#사모하는마음", description: "마음속으로 남몰래 상대방을 그리워하고 존경하는 순수한 마음을 가졌습니다.", goodMatch: "재스민", badMatch: "빌베르기아" },
-            "6-8": { name: "재스민", keywords: "#사랑스러움", description: "보고만 있어도 미소가 지어지는, 사랑스러운 매력으로 가득한 사람입니다.", goodMatch: "슈미트티아나", badMatch: "크립탄서스" },
-            "6-9": { name: "스위트피", keywords: "#우아한추억", description: "지나간 시간들을 아름답고 우아한 추억으로 간직할 줄 아는 낭만가입니다.", goodMatch: "수염패랭이꽃", badMatch: "디키아" },
-            "6-10": { name: "수염패랭이꽃", keywords: "#의협심", description: "불의를 보면 참지 못하고, 약자를 돕기 위해 나서는 정의로운 마음을 가졌습니다.", goodMatch: "스위트피", badMatch: "헤크티아" },
-            "6-11": { name: "중국패모", keywords: "#매혹", description: "신비롭고 고혹적인 분위기로 사람들의 마음을 사로잡는 치명적인 매력이 있습니다.", goodMatch: "레제다 오도라타", badMatch: "푸야" },
-            "6-12": { name: "레제다 오도라타", keywords: "#매력", description: "인위적으로 꾸미지 않아도 자연스럽게 흘러나오는, 본연의 매력을 지닌 사람입니다.", goodMatch: "중국패모", badMatch: "아나나스" },
-            "6-13": { name: "디기탈리스", keywords: "#가슴속의생각", description: "자신의 속마음을 쉽게 드러내지 않고, 가슴속 깊이 간직하는 신중한 타입입니다.", goodMatch: "뚜껑별꽃", badMatch: "산세베리아" },
-            "6-14": { name: "뚜껑별꽃", keywords: "#추상", description: "복잡하고 어려운 문제의 핵심을 꿰뚫어 보는 뛰어난 통찰력을 가졌습니다.", goodMatch: "디기탈리스", badMatch: "드라세나" },
-            "6-15": { name: "카네이션", keywords: "#열렬한사랑", description: "사랑하는 대상에게 자신의 모든 열정을 쏟아붓는 뜨거운 마음의 소유자입니다.", goodMatch: "튜베로즈", badMatch: "몬스테라" },
-            "6-16": { name: "튜베로즈", keywords: "#위험한쾌락", description: "안전하고 평범한 길보다는, 아슬아슬하고 짜릿한 도전을 즐기는 경향이 있습니다.", goodMatch: "카네이션", badMatch: "필로덴드론" },
-            "6-17": { name: "토끼풀", keywords: "#약속", description: "한 번 뱉은 말은 반드시 지키려고 노력하는, 신의 있고 책임감 있는 사람입니다.", goodMatch: "백리향", badMatch: "스킨답서스" },
-            "6-18": { name: "백리향", keywords: "#용기", description: "어려움 앞에서 좌절하기보다는, 용기를 내어 정면으로 돌파하려 합니다.", goodMatch: "토끼풀", badMatch: "싱고니움" },
-            "6-19": { name: "스위트브라이어", keywords: "#사랑", description: "사랑을 주고받는 과정에서 삶의 가장 큰 기쁨과 의미를 찾는 로맨티스트입니다.", goodMatch: "꼬리풀", badMatch: "아글라오네마" },
-            "6-20": { name: "꼬리풀", keywords: "#달성", description: "어떤 목표든 한번 세우면, 반드시 이뤄내고야 마는 강한 성취욕을 가졌습니다.", goodMatch: "스위트브라이어", badMatch: "디펜바키아" },
-            "6-21": { name: "달맞이꽃", keywords: "#자유스러운마음", description: "어떤 규칙이나 틀에 얽매이지 않고, 자유롭게 생각하고 행동하는 영혼입니다.", goodMatch: "가자니아", badMatch: "칼라데아" },
-            "6-22": { name: "가자니아", keywords: "#수줍음", description: "수줍은 미소 뒤에 눈부신 영광을 숨기고 있는, 잠재력이 큰 사람입니다.", goodMatch: "달맞이꽃", badMatch: "마란타" },
-            "6-23": { name: "접시꽃", keywords: "#열렬한연애", description: "연애를 할 때, 미지근한 감정보다는 뜨겁고 열렬하게 사랑을 나누는 타입입니다.", goodMatch: "버베나", badMatch: "스트로만테" },
-            "6-24": { name: "버베나", keywords: "#가족의화합", description: "개인의 성공보다 가족 구성원 모두의 행복과 화목을 가장 중요하게 생각합니다.", goodMatch: "접시꽃", badMatch: "크테난테" },
-            "6-25": { name: "나팔꽃", keywords: "#덧없는사랑", description: "순간의 감정에 쉽게 빠져들지만, 그만큼 사랑이 빠르게 식기도 하는 타입입니다.", goodMatch: "흰라일락", badMatch: "피토니아" },
-            "6-26": { name: "흰라일락", keywords: "#아름다운맹세", description: "사랑하는 사람과 맺은 약속을 신성하게 여기며, 영원히 지키려 노력합니다.", goodMatch: "나팔꽃", badMatch: "헤미그라피스" },
-            "6-27": { name: "시계꽃", keywords: "#성스러운사랑", description: "육체적인 끌림을 넘어, 정신적으로 깊이 교감하는 성숙한 사랑을 추구합니다.", goodMatch: "제라늄", badMatch: "아스플레니움" },
-            "6-28": { name: "제라늄", keywords: "#그대가있어행복합니다", description: "사랑하는 사람의 존재 자체에서 삶의 가장 큰 행복과 위안을 얻습니다.", goodMatch: "시계꽃", badMatch: "아디안텀" },
-            "6-29": { name: "빨강 제라늄", keywords: "#그대가있어사랑이있네", description: "당신이 있기에 비로소 사랑의 의미를 깨닫게 된다고 믿는 순정파입니다.", goodMatch: "인동", badMatch: "프테리스" },
-            "6-30": { name: "인동", keywords: "#사랑의인연", description: "한 번 맺어진 운명적인 사랑의 인연을 무엇보다 소중히 여깁니다.", goodMatch: "빨강 제라늄", badMatch: "네프롤레피스" },
-            "7-1": { name: "단양쑥부쟁이", keywords: "#공상", description: "현실에 안주하기보다, 자유로운 상상의 나래를 펼치며 꿈꾸기를 좋아합니다.", goodMatch: "금어초", badMatch: "다바나" },
-            "7-2": { name: "금어초", keywords: "#욕망", description: "자신이 원하는 것을 얻기 위해 적극적으로 노력하고, 성취하려는 욕구가 강합니다.", goodMatch: "단양쑥부쟁이", badMatch: "셀라기넬라" },
-            "7-3": { name: "흰색 양귀비", keywords: "#망각", description: "아픈 과거는 깨끗이 잊고, 새로운 미래를 향해 나아갈 줄 아는 긍정적인 사람입니다.", goodMatch: "자목련", badMatch: "석송" },
-            "7-4": { name: "자목련", keywords: "#자연애", description: "인공적인 것보다 자연 그대로의 아름다움을 사랑하고, 그 속에서 평안을 느낍니다.", goodMatch: "흰색 양귀비", badMatch: "이끼" },
-            "7-5": { name: "라벤더", keywords: "#풍부한향기", description: "자신만의 독특한 매력과 향기로 주변 사람들에게 깊은 인상을 남깁니다.", goodMatch: "해바라기", badMatch: "지의류" },
-            "7-6": { name: "해바라기", keywords: "#동경", description: "자신이 존경하는 대상이나 이상향을 향해 끊임없이 나아가려는 열정을 가졌습니다.", goodMatch: "라벤더", badMatch: "균류" },
-            "7-7": { name: "서양까지밥나무", keywords: "#예상", description: "뛰어난 직관력으로 미래를 예측하고 현명한 결정을 내리는 능력이 있습니다.", goodMatch: "버드푸트", badMatch: "세균" },
-            "7-8": { name: "버드푸트", keywords: "#다시만날날까지", description: "헤어짐을 끝이 아닌, 새로운 만남을 기약하는 과정으로 생각하는 긍정적인 마인드를 가졌습니다.", goodMatch: "서양까지밥나무", badMatch: "고세균" },
-            "7-9": { name: "아이비 제라늄", keywords: "#진실한애정", description: "화려한 말보다는 꾸준하고 진실된 행동으로 자신의 애정을 증명합니다.", goodMatch: "초롱꽃", badMatch: "원생생물" },
-            "7-10": { name: "초롱꽃", keywords: "#감사", description: "자신에게 주어진 모든 것에 감사할 줄 아는 겸손하고 따뜻한 마음을 가졌습니다.", goodMatch: "아이비 제라늄", badMatch: "동물" },
-            "7-11": { name: "아스포델", keywords: "#나는당신의것", description: "사랑하는 사람에게 모든 것을 바칠 준비가 되어 있는 헌신적인 순정파입니다.", goodMatch: "좁은입배풍동", badMatch: "해면동물" },
-            "7-12": { name: "좁은입배풍동", keywords: "#참을수없어", description: "불의나 부당한 상황을 보면, 그냥 넘어가지 못하고 목소리를 내는 정의로운 사람입니다.", goodMatch: "아스포델", badMatch: "자포동물" },
-            "7-13": { name: "잡초의 꽃", keywords: "#실제적인사람", description: "뜬구름 잡는 이야기보다는, 현실에 발을 딛고 실질적인 계획을 세우는 타입입니다.", goodMatch: "플록스", badMatch: "편형동물" },
-            "7-14": { name: "플록스", keywords: "#온화", description: "따뜻하고 부드러운 성품으로 주변 사람들을 편안하게 만드는 매력이 있습니다.", goodMatch: "잡초의 꽃", badMatch: "유형동물" },
-            "7-15": { name: "들장미", keywords: "#사랑스러움", description: "꾸미지 않은 자연스러운 모습에서 묻어 나오는 사랑스러움이 매력 포인트입니다.", goodMatch: "비단향꽃무", badMatch: "윤형동물" },
-            "7-16": { name: "비단향꽃무", keywords: "#영원한아름다움", description: "세월이 흘러도 변치 않는, 자신만의 고유한 아름다움을 간직하고 있습니다.", goodMatch: "들장미", badMatch: "복모동물" },
-            "7-17": { name: "흰색장미", keywords: "#존경", description: "상대방의 인격과 가치를 깊이 존중하며, 이를 바탕으로 관계를 맺습니다.", goodMatch: "이끼 장미", badMatch: "동문동물" },
-            "7-18": { name: "이끼 장미", keywords: "#가련함", description: "연약하고 섬세한 모습으로, 다른 사람의 보호 본능을 자극하는 매력이 있습니다.", goodMatch: "흰색장미", badMatch: "새예동물" },
-            "7-19": { name: "백부자", keywords: "#빛나다", description: "어디에 있든 자신만의 빛을 발하며, 주변의 시선을 한 몸에 받는 존재입니다.", goodMatch: "가지", badMatch: "구두동물" },
-            "7-20": { name: "가지", keywords: "#진실", description: "거짓이나 꾸밈없이, 언제나 진실된 마음과 태도로 사람과 세상을 대합니다.", goodMatch: "백부자", badMatch: "완족동물" },
-            "7-21": { name: "노랑장미", keywords: "#질투", description: "사랑하는 사람에 대한 애정이 깊은 만큼, 때로는 강한 질투심을 느끼기도 합니다.", goodMatch: "패랭이꽃", badMatch: "태형동물" },
-            "7-22": { name: "패랭이꽃", keywords: "#사모", description: "마음속으로 깊이 존경하고 그리워하는 대상을 향한 순수한 마음을 간직하고 있습니다.", goodMatch: "노랑장미", badMatch: "의충동물" },
-            "7-23": { name: "장미", keywords: "#아름다움", description: "내면과 외면이 조화롭게 어우러져, 눈부신 아름다움을 발산하는 사람입니다.", goodMatch: "연령초", badMatch: "성구동물" },
-            "7-24": { name: "연령초", keywords: "#그윽한마음", description: "쉽게 들뜨지 않고, 차분하고 깊이 있는 마음으로 모든 것을 바라봅니다.", goodMatch: "장미", badMatch: "연체동물" },
-            "7-25": { name: "말오줌나무", keywords: "#열심", description: "자신에게 주어진 일이라면, 누구보다 열심히 최선을 다해 몰두하는 타입입니다.", goodMatch: "향쑥", badMatch: "환형동물" },
-            "7-26": { name: "향쑥", keywords: "#평화", description: "갈등이나 다툼보다는, 평화롭고 조화로운 상태를 가장 중요하게 생각합니다.", goodMatch: "말오줌나무", badMatch: "선형동물" },
-            "7-27": { name: "제라늄", keywords: "#진실한애정", description: "변덕스럽지 않은, 꾸준하고 진실된 마음으로 사랑을 표현하는 사람입니다.", goodMatch: "패랭이꽃", badMatch: "유조동물" },
-            "7-28": { name: "패랭이꽃", keywords: "#언제나사랑", description: "상황이 변해도, 당신의 사랑은 언제나 한결같을 것이라는 믿음을 줍니다.", goodMatch: "제라늄", badMatch: "완보동물" },
-            "7-29": { name: "선인장", keywords: "#불타는마음", description: "무심해 보이는 겉모습과 달리, 속에는 누구보다 뜨거운 열정을 품고 있습니다.", goodMatch: "서양종 보리수", badMatch: "절지동물" },
-            "7-30": { name: "서양종 보리수", keywords: "#부부애", description: "배우자와의 사랑과 신뢰를 가장 소중히 여기며, 행복한 가정을 꾸려나갑니다.", goodMatch: "선인장", badMatch: "모악동물" },
-            "7-31": { name: "호박", keywords: "#광대함", description: "작은 것에 얽매이지 않고, 넓고 큰 마음으로 세상을 포용할 줄 아는 사람입니다.", goodMatch: "빨강 양귀비", badMatch: "극피동물" },
-            "8-1": { name: "빨강 양귀비", keywords: "#위로", description: "상대방의 아픔에 깊이 공감하고, 따뜻한 말과 행동으로 위로를 건넵니다.", goodMatch: "수레국화", badMatch: "반삭동물" },
-            "8-2": { name: "수레국화", keywords: "#행복", description: "일상의 소소한 순간들에서 행복을 발견하고, 그 기쁨을 주변과 나눌 줄 압니다.", goodMatch: "빨강 양귀비", badMatch: "척삭동물" },
-            "8-3": { name: "수박풀", keywords: "#아가씨의아름다운자태", description: "우아하고 세련된 모습으로, 많은 사람들의 부러움과 시선을 한 몸에 받습니다.", goodMatch: "옥수수", badMatch: "먹장어" },
-            "8-4": { name: "옥수수", keywords: "#재물", description: "풍요로운 재물을 끌어당기는 능력이 있으며, 이를 현명하게 관리할 줄 압니다.", goodMatch: "수박풀", badMatch: "칠성장어" },
-            "8-5": { name: "엘리카", keywords: "#고독", description: "혼자만의 시간을 즐길 줄 알며, 고독을 통해 자신을 성찰하고 성장합니다.", goodMatch: "능소화", badMatch: "연골어류" },
-            "8-6": { name: "능소화", keywords: "#명예", description: "자신의 분야에서 뛰어난 업적을 쌓아, 많은 사람들에게 인정과 명예를 얻습니다.", goodMatch: "엘리카", badMatch: "조기어류" },
-            "8-7": { name: "석류", keywords: "#원숙한아름다움", description: "세월의 흐름 속에서 더욱 깊어지고 빛을 발하는, 원숙한 아름다움을 지녔습니다.", goodMatch: "진달래", badMatch: "육기어류" },
-            "8-8": { name: "진달래", keywords: "#사랑의희열", description: "사랑을 통해 느끼는 벅찬 기쁨과 설렘을 삶의 원동력으로 삼는 사람입니다.", goodMatch: "석류", badMatch: "양서류" },
-            "8-9": { name: "시스투스", keywords: "#인기", description: "타고난 매력과 친화력으로, 어디에서나 사람들의 관심과 사랑을 받는 인기인입니다.", goodMatch: "이끼", badMatch: "파충류" },
-            "8-10": { name: "이끼", keywords: "#모성애", description: "자신보다 남을 먼저 챙기고 보살피는, 따뜻하고 깊은 모성애를 가졌습니다.", goodMatch: "시스투스", badMatch: "조류" },
-            "8-11": { name: "빨강 무늬 제라늄", keywords: "#위안", description: "지친 마음을 따뜻하게 감싸주고, 편안한 안식처가 되어주는 사람입니다.", goodMatch: "협죽도", badMatch: "포유류" },
-            "8-12": { name: "협죽도", keywords: "#위험", description: "때로는 위험을 감수하고서라도, 자신이 원하는 것을 쟁취하려는 대담함이 있습니다.", goodMatch: "빨강 무늬 제라늄", badMatch: "단공류" },
-            "8-13": { name: "골든 로드", keywords: "#경계", description: "새로운 것이나 사람을 대할 때, 쉽게 마음을 열지 않고 신중하게 관찰하는 타입입니다.", goodMatch: "저먼더", badMatch: "유대류" },
-            "8-14": { name: "저먼더", keywords: "#경애", description: "존경과 사랑의 마음을 담아, 상대방을 소중하고 귀하게 여깁니다.", goodMatch: "골든 로드", badMatch: "태반류" },
-            "8-15": { name: "해바라기", keywords: "#광휘", description: "태양처럼 밝고 강렬한 에너지로, 주변을 환하게 비추는 존재입니다.", goodMatch: "타마린드", badMatch: "진무장목" },
-            "8-16": { name: "타마린드", keywords: "#사치", description: "아름답고 가치 있는 것을 알아보는 안목이 있으며, 이를 통해 삶의 풍요를 즐깁니다.", goodMatch: "해바라기", badMatch: "설치류" },
-            "8-17": { name: "튤립나무", keywords: "#전원의행복", description: "복잡한 도시의 삶보다는, 자연 속에서 소박하고 평화로운 행복을 찾는 사람입니다.", goodMatch: "접시꽃", badMatch: "토끼목" },
-            "8-18": { name: "접시꽃", keywords: "#풍요", description: "물질적으로나 정신적으로나 부족함 없는, 풍요로운 삶을 누릴 운을 타고났습니다.", goodMatch: "튤립나무", badMatch: "영장류" },
-            "8-19": { name: "로사 캠피온", keywords: "#성실", description: "성실한 태도와 정의로운 마음으로 주변 사람들에게 깊은 신뢰를 줍니다.", goodMatch: "프리지아", badMatch: "익수목" },
-            "8-20": { name: "프리지아", keywords: "#순결", description: "어떤 유혹에도 흔들리지 않는, 맑고 깨끗한 마음과 순수한 영혼을 지녔습니다.", goodMatch: "로사 캠피온", badMatch: "식육목" },
-            "8-21": { name: "짚신나물", keywords: "#감사", description: "작은 친절이나 도움에도 감사할 줄 아는, 겸손하고 따뜻한 마음을 가졌습니다.", goodMatch: "스피리아", badMatch: "기제목" },
-            "8-22": { name: "스피리아", keywords: "#노력", description: "타고난 재능보다는, 끊임없는 노력을 통해 자신의 목표를 이루어내는 타입입니다.", goodMatch: "짚신나물", badMatch: "우제목" },
-            "8-23": { name: "서양종 보리수", keywords: "#부부의사랑", description: "배우자와의 깊은 사랑과 신뢰를 바탕으로, 행복하고 안정된 가정을 꾸려나갑니다.", goodMatch: "금잔화", badMatch: "고래목" },
-            "8-24": { name: "금잔화", keywords: "#이별의슬픔", description: "사랑하는 사람과의 헤어짐에 깊은 슬픔을 느끼지만, 이를 통해 한 단계 더 성장합니다.", goodMatch: "서양종 보리수", badMatch: "해우목" },
-            "8-25": { name: "안스륨", keywords: "#사랑에번민하는마음", description: "사랑 때문에 깊이 고민하고 아파하는, 섬세하고 열정적인 마음의 소유자입니다.", goodMatch: "하이포시스 오리어", badMatch: "장비목" },
-            "8-26": { name: "하이포시스 오리어", keywords: "#빛을찾다", description: "어둠 속에서도 희망의 빛을 찾아 나아가는, 긍정적이고 강인한 사람입니다.", goodMatch: "안스륨", badMatch: "바위너구리목" },
-            "8-27": { name: "오미자", keywords: "#재회", description: "헤어졌던 인연과 운명처럼 다시 만나, 이전보다 더 깊은 사랑을 나눕니다.", goodMatch: "에린지움", badMatch: "관치목" },
-            "8-28": { name: "에린지움", keywords: "#비밀스러운애정", description: "자신의 마음을 겉으로 표현하기보다, 남몰래 간직하는 비밀스러운 사랑을 합니다.", goodMatch: "오미자", badMatch: "유린목" },
-            "8-29": { name: "꽃담배", keywords: "#그대가있어외롭지않네", description: "사랑하는 사람과 함께 있기에, 세상의 어떤 어려움도 외롭지 않다고 느낍니다.", goodMatch: "저먼더", badMatch: "빈치목" },
-            "8-30": { name: "저먼더", keywords: "#담백", description: "꾸밈이나 과장 없이, 솔직하고 담백한 모습으로 자신의 매력을 드러냅니다.", goodMatch: "꽃담배", badMatch: "피부비행목" },
-            "8-31": { name: "토끼풀", keywords: "#약속", description: "한 번 한 약속은 반드시 지키려고 노력하는, 신뢰할 수 있는 사람입니다.", goodMatch: "호랑이꽃", badMatch: "나무두더지목" },
-            "9-1": { name: "호랑이꽃", keywords: "#나를사랑해주세요", description: "강해 보이는 겉모습과 달리, 내면에는 사랑받고 싶은 순수한 마음이 있습니다.", goodMatch: "멕시칸 아이비", badMatch: "도라지" },
-            "9-2": { name: "멕시칸 아이비", keywords: "#변화", description: "안주하기보다는, 끊임없이 새로운 도전을 통해 변화하고 성장하는 것을 즐깁니다.", goodMatch: "호랑이꽃", badMatch: "더덕" },
-            "9-3": { name: "마거리트", keywords: "#마음속에감춘사랑", description: "겉으로 드러내지 않고 마음속 깊이 간직하는, 비밀스러운 사랑을 하고 있습니다.", goodMatch: "갓", badMatch: "잔대" },
-            "9-4": { name: "갓", keywords: "#무관심", description: "주변의 사소한 일에 얽매이지 않고, 자신만의 길을 묵묵히 걸어가는 타입입니다.", goodMatch: "마거리트", badMatch: "초롱꽃" },
-            "9-5": { name: "느릅나무", keywords: "#신뢰", description: "한번 맺은 약속은 반드시 지키는, 믿음직하고 신뢰할 수 있는 사람입니다.", goodMatch: "황금싸리", badMatch: "영아자" },
-            "9-6": { name: "한련", keywords: "#애국심", description: "자신이 속한 나라와 공동체를 사랑하며, 그 발전에 기여하고자 하는 마음이 큽니다.", goodMatch: "느릅나무", badMatch: "모싯대" },
-            "9-7": { name: "오렌지", keywords: "#새색시의기쁨", description: "새로운 시작을 앞둔 설렘과 기쁨으로 가득 찬, 긍정적인 에너지를 가졌습니다.", goodMatch: "수세미외", badMatch: "금강초롱꽃" },
-            "9-8": { name: "목화", keywords: "#어머니의사랑", description: "자식을 향한 어머니의 끝없는 사랑처럼, 따뜻하고 포근한 마음을 지녔습니다.", goodMatch: "오렌지", badMatch: "산꼬리풀" },
-            "9-9": { name: "갓개매취", keywords: "#추억", description: "지나간 시간 속의 아름다운 기억들을 소중히 간직하며 살아갑니다.", goodMatch: "목화", badMatch: "구와꼬리풀" },
-            "9-10": { name: "흰색 과꽃", keywords: "#믿는마음", description: "사랑하는 사람을 의심하지 않고 온전히 믿어주는, 순수한 마음의 소유자입니다.", goodMatch: "갓개매취", badMatch: "넓은잎꼬리풀" },
-            "9-11": { name: "알로에", keywords: "#꽃도잎새도", description: "어느 하나 빼놓을 수 없이 다채로운 매력을 지니고 있는, 팔방미인입니다.", goodMatch: "나팔꽃", badMatch: "꼬리풀" },
-            "9-12": { name: "클레마티스", keywords: "#마음의아름다움", description: "외적인 모습보다 내면의 성숙함과 아름다움을 더 가치있게 생각합니다.", goodMatch: "알로에", badMatch: "큰꼬리풀" },
-            "9-13": { name: "버드나무", keywords: "#솔직", description: "자신의 감정이나 생각을 꾸미지 않고, 있는 그대로 솔직하게 표현합니다.", goodMatch: "클레마티스", badMatch: "긴산꼬리풀" },
-            "9-14": { name: "사과", keywords: "#명성", description: "자신의 분야에서 뛰어난 재능을 발휘하여, 많은 사람들에게 명성을 떨칩니다.", goodMatch: "버드나무", badMatch: "털꼬리풀" },
-            "9-15": { name: "다알리아", keywords: "#화려함", description: "어디에 있든 눈에 띄는 화려하고 강렬한 매력으로 주변을 압도합니다.", goodMatch: "사과", badMatch: "물꼬리풀" },
-            "9-16": { name: "용담", keywords: "#슬픈그대가좋아", description: "상대방의 밝은 모습뿐만 아니라, 슬픔과 아픔까지도 사랑할 줄 아는 깊은 마음을 가졌습니다.", goodMatch: "다알리아", badMatch: "봉래꼬리풀" },
-            "9-17": { name: "에리카", keywords: "#고독", description: "혼자만의 시간을 즐기며, 고독 속에서 자신을 돌아보고 성장하는 것을 즐깁니다.", goodMatch: "용담", badMatch: "산꼬리풀" },
-            "9-18": { name: "엉겅퀴", keywords: "#엄격", description: "자신에게 엄격한 잣대를 들이대며, 끊임없이 발전하기 위해 노력하는 타입입니다.", goodMatch: "에리카", badMatch: "섬꼬리풀" },
-            "9-19": { name: "사초", keywords: "#자중", description: "가벼이 행동하지 않고, 모든 일에 신중하고 무게감 있는 태도를 유지합니다.", goodMatch: "엉겅퀴", badMatch: "꼬리풀" },
-            "9-20": { name: "로즈마리", keywords: "#나를생각해요", description: "다른 사람에게 잊히지 않는, 특별하고 향기로운 사람으로 기억됩니다.", goodMatch: "사초", badMatch: "둥근산꼬리풀" },
-            "9-21": { name: "사프란", keywords: "#지나간행복", description: "과거의 행복했던 기억을 소중히 간직하며, 현재를 살아갈 힘을 얻습니다.", goodMatch: "로즈마리", badMatch: "큰꼬리풀" },
-            "9-22": { name: "퀘이킹 그라스", keywords: "#흥분", description: "새로운 경험이나 도전에 대해, 아이처럼 설레고 흥분하는 순수한 열정을 가졌습니다.", goodMatch: "사프란", badMatch: "긴산꼬리풀" },
-            "9-23": { name: "주목", keywords: "#고상함", description: "말과 행동에서 품위가 느껴지는, 고상하고 우아한 분위기를 지닌 사람입니다.", goodMatch: "퀘이킹 그라스", badMatch: "털꼬리풀" },
-            "9-24": { name: "오렌지", keywords: "#순수", description: "세상의 때가 묻지 않은, 맑고 깨끗한 순수한 마음으로 사람을 대합니다.", goodMatch: "주목", badMatch: "물꼬리풀" },
-            "9-25": { name: "메귀리", keywords: "#음악을좋아함", description: "리듬과 멜로디 속에서 삶의 위안과 기쁨을 찾는, 예술적 감수성이 풍부합니다.", goodMatch: "오렌지", badMatch: "봉래꼬리풀" },
-            "9-26": { name: "감", keywords: "#자연미", description: "인위적으로 꾸미지 않은, 자연 그대로의 모습에서 가장 큰 아름다움을 발산합니다.", goodMatch: "메귀리", badMatch: "산꼬리풀" },
-            "9-27": { name: "떡갈나무", keywords: "#사랑은영원히", description: "한 번 시작한 사랑은 영원할 것이라고 믿는, 낭만적이고 순수한 마음을 가졌습니다.", goodMatch: "감", badMatch: "섬꼬리풀" },
-            "9-28": { name: "색비름", keywords: "#애정", description: "주변 사람들에게 따뜻한 애정을 아낌없이 나누어주는, 마음이 풍요로운 사람입니다.", goodMatch: "떡갈나무", badMatch: "구와꼬리풀" },
-            "9-29": { name: "사과나무", keywords: "#현명 #성공", description: '지혜로운 판단으로 성공을 이끌어내는, 매력적이고 현명한 사람입니다.', goodMatch: '크리스마스 로즈', badMatch: '카모마일' },
-            "9-30": { name: "삼나무", keywords: "#웅대", description: "작은 것에 연연하지 않는, 크고 넓은 마음과 포부를 지닌 대인배입니다.", goodMatch: "사과나무", badMatch: "넓은잎꼬리풀" },
-            "10-1": { name: "빨강 국화", keywords: "#사랑", description: "사랑을 삶의 가장 중요한 가치로 여기며, 사랑을 통해 희로애락을 배웁니다.", goodMatch: "단풍나무", badMatch: "호박" },
-            "10-2": { name: "살구", keywords: "#아가씨의수줍음", description: "마음을 표현하는 데 서툴지만, 그 수줍은 모습이 오히려 더 큰 매력으로 다가옵니다.", goodMatch: "빨강 국화", badMatch: "선인장" },
-            "10-3": { name: "단풍나무", keywords: "#자제", description: "어떤 상황에서도 감정에 휩쓸리지 않고, 자신을 통제할 줄 아는 성숙함을 지녔습니다.", goodMatch: "살구", badMatch: "패랭이꽃" },
-            "10-4": { name: "홉", keywords: "#순진무구", description: "세상을 긍정적이고 순수한 시선으로 바라보는, 티 없이 맑은 영혼의 소유자입니다.", goodMatch: "단풍나무", badMatch: "노랑장미" },
-            "10-5": { name: "종려나무", keywords: "#승리", description: "어떤 경쟁이나 역경 속에서도, 결국에는 승리를 쟁취해내는 강한 힘이 있습니다.", goodMatch: "홉", badMatch: "가지" },
-            "10-6": { name: "개암나무", keywords: "#화해", description: "갈등 상황에서 먼저 손을 내밀고, 관계를 회복하기 위해 노력하는 평화주의자입니다.", goodMatch: "종려나무", badMatch: "백부자" },
-            "10-7": { name: "전나무", keywords: "#고상함", description: "말과 행동에서 기품이 느껴지는, 고상하고 세련된 분위기를 지닌 사람입니다.", goodMatch: "개암나무", badMatch: "이끼 장미" },
-            "10-8": { name: "파슬리", keywords: "#승리", description: "자신과의 싸움에서 끊임없이 승리하며, 어제보다 더 나은 오늘을 만들어갑니다.", goodMatch: "전나무", badMatch: "흰색장미" },
-            "10-9": { name: "회향", keywords: "#극찬", description: "뛰어난 재능과 노력으로, 주변 사람들로부터 아낌없는 칭찬과 인정을 받습니다.", goodMatch: "파슬리", badMatch: "비단향꽃무" },
-            "10-10": { name: "멜론", keywords: "#포식", description: "삶이 주는 즐거움과 풍요로움을 마음껏 누릴 줄 아는, 긍정적인 사람입니다.", goodMatch: "회향", badMatch: "들장미" },
-            "10-11": { name: "부처꽃", keywords: "#사랑의슬픔", description: "사랑으로 인한 아픔을 깊이 이해하며, 그 슬픔을 통해 더욱 성숙해집니다.", goodMatch: "멜론", badMatch: "플록스" },
-            "10-12": { name: "월귤", keywords: "#반항심", description: "정해진 규칙이나 틀에 얽매이기보다, 자신만의 방식으로 세상을 살아가려 합니다.", goodMatch: "부처꽃", badMatch: "잡초의 꽃" },
-            "10-13": { name: "조팝나무", keywords: "#단정한사랑", description: "요란하거나 화려하지 않지만, 진실되고 단정한 마음으로 사랑을 표현합니다.", goodMatch: "월귤", badMatch: "좁은입배풍동" },
-            "10-14": { name: "흰색 국화", keywords: "#진실", description: "거짓이나 꾸밈없이, 언제나 진실된 마음으로 사람과 세상을 마주합니다.", goodMatch: "조팝나무", badMatch: "아스포델" },
-            "10-15": { name: "스위트 바질", keywords: "#좋은희망", description: "어떤 상황에서도 긍정적인 희망을 잃지 않고, 더 나은 내일을 꿈꿉니다.", goodMatch: "흰색 국화", badMatch: "초롱꽃" },
-            "10-16": { name: "이끼장미", keywords: "#순진무구", description: "세상의 때가 묻지 않은, 아이처럼 순수하고 깨끗한 마음을 간직하고 있습니다.", goodMatch: "스위트 바질", badMatch: "아이비 제라늄" },
-            "10-17": { name: "포도", keywords: "#신뢰", description: "한결같은 모습으로 주변 사람들에게 믿음을 주며, 깊은 신뢰 관계를 쌓아갑니다.", goodMatch: "이끼장미", badMatch: "버드푸트" },
-            "10-18": { name: "넌출월귤", keywords: "#마음의고통을위로하다", description: "상처받은 마음을 따뜻하게 감싸주고, 진심 어린 위로를 건넬 줄 아는 사람입니다.", goodMatch: "포도", badMatch: "서양까지밥나무" },
-            "10-19": { name: "빨강 봉선화", keywords: "#날만지지마세요", description: "자신의 영역을 중요하게 생각하며, 함부로 다가오는 것을 경계하는 섬세함을 가졌습니다.", goodMatch: "넌출월귤", badMatch: "해바라기" },
-            "10-20": { name: "마", keywords: "#운명", description: "자신에게 주어진 운명을 긍정적으로 받아들이고, 그 안에서 최선을 다해 살아갑니다.", goodMatch: "빨강 봉선화", badMatch: "라벤더" },
-            "10-21": { name: "엉겅퀴", keywords: "#독립", description: "누군가에게 의지하기보다, 스스로의 힘으로 자신의 삶을 개척해나가는 독립적인 사람입니다.", goodMatch: "마", badMatch: "자목련" },
-            "10-22": { name: "벗풀", keywords: "#신뢰", description: "한 번 믿음을 준 사람에게는, 변치 않는 신뢰를 보내는 의리 있는 사람입니다.", goodMatch: "엉겅퀴", badMatch: "흰색 양귀비" },
-            "10-23": { name: "흰독말풀", keywords: "#경애", description: "존경과 사랑의 마음으로, 상대방을 소중하고 귀하게 대할 줄 압니다.", goodMatch: "벗풀", badMatch: "금어초" },
-            "10-24": { name: "매화", keywords: "#고결한마음", description: "어떤 상황에서도 품위를 잃지 않는, 고결하고 맑은 마음의 소유자입니다.", goodMatch: "흰독말풀", badMatch: "단양쑥부쟁이" },
-            "10-25": { name: "단풍", keywords: "#염려", description: "자신보다 주변 사람들을 먼저 걱정하고 챙기는, 따뜻하고 다정한 마음을 가졌습니다.", goodMatch: "매화", badMatch: "인동" },
-            "10-26": { name: "수영", keywords: "#애정", description: "사랑하는 사람에게 자신의 애정을 아낌없이 표현하고, 따뜻함을 나누는 사람입니다.", goodMatch: "단풍", badMatch: "빨강 제라늄" },
-            "10-27": { name: "들장미", keywords: "#시", description: "일상의 순간들을 아름다운 시처럼 바라보는, 풍부한 감수성과 낭만을 지녔습니다.", goodMatch: "수영", badMatch: "제라늄" },
-            "10-28": { name: "무궁화", keywords: "#섬세한아름다움", description: "겉보기와 달리, 내면에는 누구보다 섬세하고 여린 아름다움을 간직하고 있습니다.", goodMatch: "들장미", badMatch: "시계꽃" },
-            "10-29": { name: "해당화", keywords: "#이끄시는대로", description: "운명의 흐름에 순응하며, 주어진 길을 묵묵히 걸어가는 지혜로운 사람입니다.", goodMatch: "무궁화", badMatch: "흰라일락" },
-            "10-30": { name: "로벨리아", keywords: "#악의", description: "불의나 부당함에 맞서 싸울 줄 아는, 강한 정의감을 가진 사람입니다.", goodMatch: "해당화", badMatch: "나팔꽃" },
-            "10-31": { name: '칼라', keywords: '#열혈 #환희', description: '뜨거운 열정으로 삶을 환희로 채워나가는, 에너지가 넘치는 사람입니다.', goodMatch: '서양까지밥나무', badMatch: '무화과' },
-            "11-1": { name: "서양모과", keywords: "#유일한사랑", description: "오직 한 사람에게만 마음을 주고, 변치 않는 사랑을 지켜나가는 순정파입니다.", goodMatch: "레몬 버베나", badMatch: "버베나" },
-            "11-2": { name: "루피너스", keywords: "#모성애", description: "자신보다 다른 사람을 먼저 챙기고 보살피는, 따뜻하고 깊은 모성애를 가졌습니다.", goodMatch: "서양모과", badMatch: "접시꽃" },
-            "11-3": { name: "브리오니아", keywords: "#거절", description: "자신의 신념이나 원칙에 어긋나는 일은, 단호하게 거절할 줄 아는 용기가 있습니다.", goodMatch: "루피너스", badMatch: "가자니아" },
-            "11-4": { name: "골고사리", keywords: "#진실의위안", description: "거짓된 위로가 아닌, 진실된 마음으로 상대방에게 진정한 위안을 줍니다.", goodMatch: "브리오니아", badMatch: "달맞이꽃" },
-            "11-5": { name: "단양쑥부쟁이", keywords: "#장애물", description: "삶의 장애물을 두려워하기보다, 그것을 넘어설 방법을 찾는 긍정적인 사람입니다.", goodMatch: "골고사리", badMatch: "꼬리풀" },
-            "11-6": { name: "등골나물", keywords: "#주저", description: "결정을 내리기 전에 신중하게 고민하며, 쉽게 행동으로 옮기지 않는 타입입니다.", goodMatch: "단양쑥부쟁이", badMatch: "스위트브라이어" },
-            "11-7": { name: "메리골드", keywords: "#이별의슬픔", description: "헤어짐의 아픔을 깊이 느끼지만, 그 슬픔을 통해 더욱 성숙해지는 사람입니다.", goodMatch: "등골나물", badMatch: "백리향" },
-            "11-8": { name: "가는동자꽃", keywords: "#기지", description: "위기 상황에서 뛰어난 순발력과 재치로, 현명하게 문제를 해결해나갑니다.", goodMatch: "메리골드", badMatch: "토끼풀" },
-            "11-9": { name: "몰약의 꽃", keywords: "#진실", description: "언제나 솔직하고 진실된 태도로, 사람들에게 깊은 신뢰를 주는 사람입니다.", goodMatch: "가는동자꽃", badMatch: "튜베로즈" },
-            "11-10": { name: "부용", keywords: "#섬세한아름다움", description: "화려하게 드러나지 않지만, 자세히 들여다볼수록 깊어지는 섬세한 아름다움을 가졌습니다.", goodMatch: "몰약의 꽃", badMatch: "카네이션" },
-            "11-11": { name: "흰동백", keywords: "#비밀스러운사랑", description: "드러내지 않는 깊은 마음, 당신의 비밀스러운 사랑은 고결하고 아름답습니다.", goodMatch: "부용", badMatch: "뚜껑별꽃" },
-            "11-12": { name: "레몬", keywords: "#진심으로사모함", description: "마음속 깊이 존경하고 사랑하는 대상을 향한, 진실된 마음을 간직하고 있습니다.", goodMatch: "흰동백", badMatch: "디기탈리스" },
-            "11-13": { name: "레몬 버베나", keywords: "#인내", description: "목표를 이루기 위해, 묵묵히 참고 기다릴 줄 아는 강한 인내심을 가졌습니다.", goodMatch: "레몬", badMatch: "중국패모" },
-            "11-14": { name: "소나무", keywords: "#용감", description: "어려움이나 위험 앞에서 두려워하지 않고, 용감하게 맞서는 대담함을 지녔습니다.", goodMatch: "레몬 버베나", badMatch: "수염패랭이꽃" },
-            "11-15": { name: "황금싸리", keywords: "#겸손", description: "자신의 재능이나 성과를 뽐내지 않고, 언제나 겸손한 태도를 유지합니다.", goodMatch: "소나무", badMatch: "스위트피" },
-            "11-16": { name: "크리스마스 로즈", keywords: "#추억", description: "지나간 시간 속의 아름다운 기억들을 소중히 간직하며, 현재를 살아갑니다.", goodMatch: "황금싸리", badMatch: "재스민" },
-            "11-17": { name: "머위", keywords: "#공평", description: "어느 한쪽에 치우치지 않고, 모든 것을 공정하고 평등하게 대하려는 마음을 가졌습니다.", goodMatch: "크리스마스 로즈", badMatch: "슈미트티아나" },
-            "11-18": { name: "산나리", keywords: "#순결", description: "세상의 유혹에도 흔들리지 않는, 맑고 깨끗한 순결한 마음을 지니고 있습니다.", goodMatch: "머위", badMatch: "노랑붓꽃" },
-            "11-19": { name: "범의귀", keywords: "#비밀", description: "자신의 속마음을 쉽게 드러내지 않고, 비밀스럽게 간직하는 신중한 사람입니다.", goodMatch: "산나리", badMatch: "메리골드" },
-            "11-20": { name: "뷰글라스", keywords: "#진실", description: "거짓이나 꾸밈을 싫어하며, 언제나 진실만을 추구하는 정직한 사람입니다.", goodMatch: "범의귀", badMatch: "장미" },
-            "11-21": { name: "초롱꽃", keywords: "#성실", description: "자신에게 주어진 일은, 요령 피우지 않고 성실하게 끝까지 해내는 책임감을 가졌습니다.", goodMatch: "뷰글라스", badMatch: "아마" },
-            "11-22": { name: "매자나무", keywords: "#까다로움", description: "자신만의 확고한 기준과 취향을 가지고 있으며, 쉽게 타협하지 않는 타입입니다.", goodMatch: "초롱꽃", badMatch: "빨강 매발톱꽃" },
-            "11-23": { name: "양치", keywords: "#성실", description: "눈에 띄지 않는 곳에서도, 묵묵히 자신의 역할을 다하는 성실한 사람입니다.", goodMatch: "매자나무", badMatch: "무릇" },
-            "11-24": { name: "가막살나무", keywords: "#사랑은죽음보다강하다", description: "어떤 어려움이나 시련도 이겨낼 수 있는, 강하고 위대한 사랑을 믿습니다.", goodMatch: "양치", badMatch: "보라색 라일락" },
-            "11-25": { name: "개옻나무", keywords: "#현명", description: "풍부한 지식과 경험을 바탕으로, 어떤 상황에서도 지혜로운 판단을 내립니다.", goodMatch: "가막살나무", badMatch: "토끼풀" },
-            "11-26": { name: "서양톱풀", keywords: "#투쟁", description: "자신이 옳다고 믿는 것을 위해, 세상과 맞서 싸울 줄 아는 용기를 가졌습니다.", goodMatch: "개옻나무", badMatch: "박하" },
-            "11-27": { name: "붉나무", keywords: "#신앙", description: "자신이 믿는 가치나 신념을, 어떤 상황에서도 굳건히 지켜나가는 사람입니다.", goodMatch: "서양톱풀", badMatch: "데이지" },
-            "11-28": { name: "과꽃", keywords: "#추상", description: "눈에 보이는 현상 너머의 본질을 꿰뚫어 보는, 깊은 통찰력과 사고력을 지녔습니다.", goodMatch: "붉나무", badMatch: "아카시아나무" },
-            "11-29": { name: "바카리스", keywords: "#개척", description: "아무도 가지 않은 길을 두려워하지 않고, 용감하게 나아가 새로운 길을 만들어냅니다.", goodMatch: "과꽃", badMatch: "삼색제비꽃" },
-            "11-30": { name: "낙엽 마른 풀", keywords: "#새로운사랑을기다리다", description: "과거의 사랑은 떠나보내고, 설레는 마음으로 새로운 사랑이 찾아오기를 기다립니다.", goodMatch: "바카리스", badMatch: "헬리오트로프" },
-            "12-1": { name: "쑥국화", keywords: "#평화", description: "다툼이나 갈등을 싫어하며, 주변 사람들과 평화롭고 조화롭게 지내기를 원합니다.", goodMatch: "애기동백", badMatch: "풀의 싹" },
-            "12-2": { name: "이끼", keywords: "#모성애", description: "주변 사람들을 따뜻하게 보살피고 감싸주는, 깊고 포근한 모성애를 가졌습니다.", goodMatch: "쑥국화", badMatch: "귀고리꽃" },
-            "12-3": { name: "라벤더", keywords: "#기대", description: "미래에 대한 긍정적인 기대를 품고, 희망찬 내일을 향해 나아가는 사람입니다.", goodMatch: "이끼", badMatch: "담홍색 참제비고깔" },
-            "12-4": { name: "수영", keywords: "#애정", description: "사랑하는 사람에게 따뜻한 애정을 아낌없이 표현하고, 마음을 나누는 것을 즐깁니다.", goodMatch: "라벤더", badMatch: "괭이밥" },
-            "12-5": { name: "앰브로시아", keywords: "#행복한연애", description: "연인과 함께하는 모든 순간에서, 충만한 행복과 기쁨을 느끼는 로맨티스트입니다.", goodMatch: "수영", badMatch: "아리스타타" },
-            "12-6": { name: "바위취", keywords: "#절실한사랑", description: "사랑에 있어, 누구보다 진실하고 절실한 마음으로 상대방을 대합니다.", goodMatch: "앰브로시아", badMatch: "옥슬립 앵초" },
-            "12-7": { name: "양치", keywords: "#신뢰", description: "한결같은 모습으로 주변 사람들에게 믿음을 주며, 깊은 신뢰 관계를 쌓아나갑니다.", goodMatch: "바위취", badMatch: "노랑 튤립" },
-            "12-8": { name: "갈대", keywords: "#깊은애정", description: "겉으로는 흔들리는 것처럼 보여도, 마음속 깊은 곳에는 변치 않는 애정을 간직하고 있습니다.", goodMatch: "양치", badMatch: "조팝나무" },
-            "12-9": { name: "국화", keywords: "#고결", description: "어떤 상황에서도 자신의 품위와 가치를 잃지 않는, 고결한 정신의 소유자입니다.", goodMatch: "갈대", badMatch: "물망초" },
-            "12-10": { name: "빨강 동백", keywords: "#고결한이성", description: "감정에 휩쓸리지 않고, 언제나 이성적이고 합리적인 판단을 내리려 노력합니다.", goodMatch: "국화", badMatch: "산사나무" },
-            "12-11": { name: "단양쑥부쟁이", keywords: "#애수", description: "어딘가 모를 슬픔과 그리움을 간직하고 있어, 신비로운 분위기를 자아냅니다.", goodMatch: "빨강 동백", badMatch: "라일락" },
-            "12-12": { name: "목화", keywords: "#우수", description: "뛰어난 재능과 감각으로, 다른 사람들보다 월등한 성과를 보여주는 사람입니다.", goodMatch: "단양쑥부쟁이", badMatch: "사과" },
-            "12-13": { name: "자홍색 국화", keywords: "#사랑", description: "사랑을 할 때 가장 생기 넘치고, 사랑을 통해 삶의 의미를 찾는 열정적인 사람입니다.", goodMatch: "목화", badMatch: "겹벚꽃" },
-            "12-14": { name: "소나무", keywords: "#용감", description: "어떤 어려움이나 도전 앞에서도, 두려워하지 않고 용감하게 맞서는 대담함을 가졌습니다.", goodMatch: "자홍색 국화", badMatch: "수련" },
-            "12-15": { name: "서향", keywords: "#불멸", description: "시간이 지나도 잊히지 않는, 강렬하고 향기로운 사람으로 기억됩니다.", goodMatch: "소나무", badMatch: "딸기잎" },
-            "12-16": { name: "오리나무", keywords: "#장엄", description: "쉽게 다가갈 수 없는 위엄과 카리스마로, 주변을 압도하는 분위기를 풍깁니다.", goodMatch: "서향", badMatch: "비단향나무꽃" },
-            "12-17": { name: "벚꽃난", keywords: "#동정", description: "다른 사람의 아픔을 자신의 아픔처럼 여기고, 따뜻한 위로를 건넬 줄 아는 사람입니다.", goodMatch: "오리나무", badMatch: "은방울꽃" },
-            "12-18": { name: "세이지", keywords: "#가정의덕", description: "가족의 행복과 화목을 무엇보다 소중히 여기며, 이를 위해 헌신합니다.", goodMatch: "벚꽃난", badMatch: "딸기" },
-            "12-19": { name: "스노 플레이크", keywords: "#아름다움", description: "순수하고 깨끗한 눈송이처럼, 꾸미지 않은 본연의 아름다움을 지니고 있습니다.", goodMatch: "세이지", badMatch: "민들레" },
-            "12-20": { name: "파인애플", keywords: "#완전무결", description: "모든 면에서 완벽을 추구하며, 작은 흠도 용납하지 않으려는 성향이 있습니다.", goodMatch: "스노 플레이크", badMatch: "미나리아재비" },
-            "12-21": { name: "박하", keywords: "#덕", description: "바르고 선한 마음으로, 주변 사람들에게 긍정적인 영향을 끼치는 덕망 있는 사람입니다.", goodMatch: "파인애플", badMatch: "카우슬립 앵초" },
-            "12-22": { name: "백일홍", keywords: "#행복", description: "오랫동안 변치 않는 행복을 누릴 운을 타고났으며, 그 행복을 주변과 나눕니다.", goodMatch: "박하", badMatch: "금사슬나무" },
-            "12-23": { name: "플라타너스", keywords: "#천재", description: "특정 분야에서 남들이 따라올 수 없는, 타고난 천재적인 재능을 발휘합니다.", goodMatch: "백일홍", badMatch: "동백나무" },
-            "12-24": { name: "겨우살이", keywords: "#강한인내심", description: "어떤 어려움 속에서도 포기하지 않고, 꿋꿋하게 버텨내는 강한 인내심을 가졌습니다.", goodMatch: "플라타너스", badMatch: "빨간 앵초" },
-            "12-25": { name: '크리스마스 로즈', keywords: '#나의불안을없애줘요', description: '혼란 속에서도 평온을 찾아주는 당신은 다른 사람의 마음을 편안하게 해주는 힘이 있습니다.', goodMatch: '사과나무', badMatch: '서양까지밥나무' },
-            "12-26": { name: "크리스마스 로즈", keywords: "#추억", description: "지나간 시간 속의 아름다운 기억들을 소중히 여기며, 그 힘으로 현재를 살아갑니다.", goodMatch: "매화", badMatch: "수련" },
-            "12-27": { name: "매화", keywords: "#맑은마음", description: "세상의 어떤 더러움에도 물들지 않는, 맑고 깨끗한 마음의 소유자입니다.", goodMatch: "크리스마스 로즈", badMatch: "논냉이" },
-            "12-28": { name: "석류", keywords: "#원숙미", description: "나이가 들어감에 따라 더욱 깊어지는, 원숙하고 우아한 아름다움을 지녔습니다.", goodMatch: "매화", badMatch: "중국 패모" },
-            "12-29": { name: "꽈리", keywords: "#자연미", description: "인위적으로 꾸미지 않은, 자연 그대로의 모습에서 가장 큰 매력을 발산합니다.", goodMatch: "석류", badMatch: "제라늄" },
-            "12-30": { name: "납매", keywords: "#자애", description: "모든 것을 너그럽게 포용하는, 어머니처럼 넓고 자애로운 마음을 가졌습니다.", goodMatch: "꽈리", badMatch: "도라지" },
-            "12-31": { name: "노송나무", keywords: "#불멸", description: "어떤 시련에도 흔들리지 않는 굳건한 믿음과 불멸의 정신을 가졌습니다.", goodMatch: "납매", badMatch: "과꽃" },
-        };
-        
-        const startPage = document.getElementById('start-page');
-        const resultPage = document.getElementById('result-page');
-        const monthSelect = document.getElementById('month');
-        const daySelect = document.getElementById('day');
-        const showResultButton = document.getElementById('show-result-button');
-        const retryButton = document.getElementById('retry-button');
-        const shareButton = document.getElementById('share-button');
-        const modal = document.getElementById('modal');
-        const closeModalButton = document.getElementById('close-modal-button');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const resultContent = document.getElementById('result-content');
-
-        function populateSelectors() {
-            for (let i = 1; i <= 12; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = `${i}월`;
-                monthSelect.appendChild(option);
-            }
-            updateDays();
-            monthSelect.addEventListener('change', updateDays);
-        }
-
-        function updateDays() {
-            const year = new Date().getFullYear();
-            const month = parseInt(monthSelect.value);
-            const daysInMonth = new Date(year, month, 0).getDate();
-            daySelect.innerHTML = '';
-            for (let i = 1; i <= daysInMonth; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = `${i}일`;
-                daySelect.appendChild(option);
-            }
-        }
-        
-        function getDailyZodiac(month, day) {
-            const year = new Date().getFullYear();
-            const stems = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
-            const branches = ['자(쥐)', '축(소)', '인(호랑이)', '묘(토끼)', '진(용)', '사(뱀)', '오(말)', '미(양)', '신(원숭이)', '유(닭)', '술(개)', '해(돼지)'];
-            const refDate = new Date(2024, 0, 1);
-            const targetDate = new Date(year, month - 1, day);
-            const timeDiff = targetDate.getTime() - refDate.getTime();
-            const dayDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
-            const stemIndex = (dayDiff + 2 + 10) % 10;
-            const branchIndex = (dayDiff + 4 + 12) % 12;
-            return `태어난 날의 기운: ${stems[stemIndex]}${branches[branchIndex]}`;
-        }
-
-        async function generateImage(flowerName) {
-            try {
-                const response = await fetch('/api/generate-image', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ flowerName: flowerName })
-                });
-
-                if (!response.ok) { 
-                    throw new Error(`HTTP error! status: ${response.status}`); 
-                }
-
-                const result = await response.json();
-                
-                if (result.imageDataUrl) {
-                    return result.imageDataUrl;
-                } else { 
-                    throw new Error('Invalid response structure from API.'); 
-                }
-            } catch (error) {
-                console.error("Image generation failed:", error);
-                
-                // Fallback: Return an inline SVG gradient background
-                const svgGradient = `
-                    <svg width="360" height="640" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#f3f0e8;stop-opacity:1" />
-                                <stop offset="50%" style="stop-color:#e8dcc6;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#d4c4a8;stop-opacity:1" />
-                            </linearGradient>
-                        </defs>
-                        <rect width="100%" height="100%" fill="url(#grad1)"/>
-                        <text x="180" y="320" font-family="serif" font-size="24" text-anchor="middle" fill="#8c5b40">
-                            ${flowerName}
-                        </text>
-                    </svg>
-                `;
-                
-                return `data:image/svg+xml;base64,${btoa(svgGradient)}`;
-            }
-        }
-        
-        showResultButton.addEventListener('click', async () => {
-            const month = monthSelect.value;
-            const day = daySelect.value;
-            const key = `${month}-${day}`;
-            const flowerData = birthFlowers[key];
-            
-            if (!flowerData) {
-                alert("선택하신 날짜의 탄생화 정보를 찾을 수 없습니다.");
-                return;
-            }
-
-            startPage.classList.add('hidden');
-            resultPage.classList.remove('hidden');
-            loadingOverlay.classList.remove('hidden');
-            resultContent.classList.add('opacity-0');
-            showResultButton.disabled = true;
-
-            const imageUrl = await generateImage(flowerData.name);
-
-            document.getElementById('daily-zodiac').textContent = getDailyZodiac(month, day);
-            document.getElementById('result-date').textContent = `${month}월 ${day}일의 당신`;
-            document.getElementById('result-flower-name').textContent = flowerData.name;
-            document.getElementById('result-keywords').textContent = flowerData.keywords;
-            document.getElementById('result-description').textContent = flowerData.description;
-            document.getElementById('result-background').style.backgroundImage = `url(${imageUrl})`;
-            
-            const compatibilitySection = document.getElementById('compatibility-section');
-            if (flowerData.goodMatch && flowerData.badMatch) {
-                document.getElementById('good-match-flower').textContent = flowerData.goodMatch;
-                document.getElementById('bad-match-flower').textContent = flowerData.badMatch;
-                compatibilitySection.classList.remove('hidden');
-            } else {
-                compatibilitySection.classList.add('hidden');
-            }
-            
-            loadingOverlay.classList.add('hidden');
-            resultContent.classList.remove('opacity-0');
-            showResultButton.disabled = false;
-        });
-
-        retryButton.addEventListener('click', () => {
-            resultPage.classList.add('hidden');
-            startPage.classList.remove('hidden');
-            resultContent.classList.add('opacity-0');
-            document.getElementById('result-background').style.backgroundImage = 'none';
-        });
-        
-        shareButton.addEventListener('click', async () => {
-            shareButton.textContent = "이미지 준비 중...";
-            shareButton.disabled = true;
-
-            try {
-                const captureArea = document.getElementById('capture-area');
-                const canvas = await html2canvas(captureArea, {
-                    useCORS: true, 
-                    backgroundColor: null,
-                    scale: window.devicePixelRatio || 2
-                });
-                const imageUrl = canvas.toDataURL('image/png');
-                
-                const downloadLink = document.getElementById('download-link');
-                downloadLink.href = imageUrl;
-                
-                modal.classList.remove('hidden');
-
-            } catch (error) {
-                console.error('Error capturing image:', error);
-                alert('이미지 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
-            } finally {
-                shareButton.textContent = "인스타그램에 공유하기";
-                shareButton.disabled = false;
-            }
-        });
-        
-        closeModalButton.addEventListener('click', () => {
-            modal.classList.add('hidden');
-        });
-        
-        modal.addEventListener('click', (e) => {
-            if (e.target.id === 'modal') {
-                modal.classList.add('hidden');
-            }
-        });
-
-        populateSelectors();
-    </script>
+      if (data.imageDataUrl) {
+        document.getElementById('flower-image').src = data.imageDataUrl;
+        document.getElementById('credit').innerHTML =
+          `Photo by <a href="${data.photographerLink}" target="_blank">${data.photographer}</a> on <a href="https://unsplash.com" target="_blank">Unsplash</a>`;
+      } else {
+        document.getElementById('flower-image').src = '';
+        document.getElementById('credit').innerText = '이미지를 가져올 수 없습니다.';
+      }
+    });
+  </script>
 </body>
 </html>
-

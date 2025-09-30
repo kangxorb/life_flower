@@ -23,7 +23,7 @@ A beautiful web application that generates traditional Korean Minhwa-style paint
 Set the following environment variable in your Vercel dashboard:
 
 ```
-GOOGLE_GENAI_API_KEY=your_api_key_here
+UNSPLASH_ACCESS_KEY=your_unsplash_access_key
 ```
 
 ### Local Development
@@ -50,14 +50,14 @@ vercel --prod
 ## API Endpoints
 
 - `GET /` - Main application
-- `POST /api/generate-image` - Generate flower image using Google Imagen 3
+- `POST /api/generate-image` - Fetch flower image using Unsplash
 
 ## Technology Stack
 
 - HTML5, CSS3, JavaScript
 - Tailwind CSS
 - html2canvas
-- Google Imagen 3 API
+- Unsplash API
 - Vercel Serverless Functions
 
 ## Project Structure
@@ -81,7 +81,7 @@ vercel --prod
 
 ## Notes
 
-- The application uses Google Imagen 3 API for generating traditional Korean Minhwa-style paintings
+- The application uses Unsplash API to retrieve flower images
 - Images are optimized for Instagram story format (9:16 aspect ratio)
 - High-resolution capture uses device pixel ratio for better quality
 - Fallback SVG gradient is provided if API fails
