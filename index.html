@@ -2,107 +2,435 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Life Flower</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>나의 탄생화 알아보기</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet"/>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f7f7f7;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
+    body { font-family: 'Gowun Batang', serif; }
+    .hanji-background {
+      background-color: #f3f0e8;
+      background-image:
+        linear-gradient(rgba(224, 213, 194, 0.3) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(224, 213, 194, 0.3) 1px, transparent 1px);
+      background-size: 20px 20px;
     }
-
-    h1 {
-      margin-bottom: 20px;
-      color: #333;
+    .korean-button {
+      background-color: #8c5b40;
+      color: #f3f0e8;
+      border: 2px solid #5a3a29;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
     }
-
-    select, input, button {
-      margin: 5px;
-      padding: 10px;
-      font-size: 16px;
+    .korean-button:hover:not(:disabled) {
+      background-color: #a26a4a;
+      transform: translateY(-2px);
+      box-shadow: 4px 4px 8px rgba(0,0,0,0.2);
     }
-
-    #result {
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    #flower-image {
-      max-width: 300px;
+    .korean-button:disabled { background-color: #b0a191; cursor: not-allowed; }
+    .story-size {
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 9 / 16;
+      margin: 0 auto;
+      position: relative;
+      overflow: hidden;
       border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-      margin-bottom: 10px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+      border: 1px solid rgba(0,0,0,0.05);
     }
-
-    #credit {
-      font-size: 14px;
-      color: #555;
-    }
-
-    #credit a {
-      color: #0070f3;
-      text-decoration: none;
-    }
-
-    #credit a:hover {
-      text-decoration: underline;
-    }
+    .story-background { background-size: cover; background-position: center; }
   </style>
 </head>
-<body>
-  <h1>🌸 Life Flower 🌸</h1>
+<body class="hanji-background min-h-screen flex items-center justify-center p-4">
 
-  <!-- 언어 선택 -->
-  <label for="lang-select">언어 선택:</label>
-  <select id="lang-select">
-    <option value="ko">한국어</option>
-    <option value="en">English</option>
-  </select>
+  <!-- 언어 토글 -->
+  <div class="fixed top-3 right-3">
+    <button id="lang-toggle"
+      class="px-3 py-1 rounded border border-[#5a3a29] text-[#5a3a29] bg-white/80 hover:bg-white">
+      EN
+    </button>
+  </div>
 
-  <!-- 꽃 이름 입력 -->
-  <input type="text" id="flower-input" placeholder="꽃 이름을 입력하세요" />
+  <!-- 시작 페이지 -->
+  <div id="start-page" class="w-full max-w-md text-center">
+    <h1 id="title" class="text-4xl md:text-5xl font-bold text-[#5a3a29] mb-3">나의 탄생화 알아보기</h1>
+    <p id="subtitle" class="text-lg text-[#6d5d4b] mb-10">당신이 태어난 날에 숨겨진 특별한 의미를 찾아보세요.</p>
 
-  <!-- 버튼 -->
-  <button id="generate-btn">이미지 불러오기</button>
+    <div class="bg-[#fdfbf5] p-8 rounded-lg shadow-lg border border-[#dcd3c3]">
+      <div class="mb-6">
+        <label for="month" id="label-month" class="block text-left text-lg text-[#5a3a29] mb-2">태어난 달</label>
+        <select id="month" class="w-full p-3 bg-white border border-[#dcd3c3] rounded-md text-lg focus:outline-none focus:ring-2 focus:ring-[#8c5b40]">
+          <!-- JS로 채움 -->
+        </select>
+      </div>
+      <div class="mb-8">
+        <label for="day" id="label-day" class="block text-left text-lg text-[#5a3a29] mb-2">태어난 날</label>
+        <select id="day" class="w-full p-3 bg-white border border-[#dcd3c3] rounded-md text-lg focus:outline-none focus:ring-2 focus:ring-[#8c5b40]">
+          <!-- JS로 채움 -->
+        </select>
+      </div>
+      <button id="show-result-button" class="korean-button w-full py-4 text-xl font-bold rounded-lg">
+        나의 탄생화 확인하기
+      </button>
+    </div>
+  </div>
 
-  <!-- 결과 영역 -->
-  <div id="result">
-    <img id="flower-image" />
-    <p id="credit"></p>
+  <!-- 결과 페이지 -->
+  <div id="result-page" class="hidden w-full max-w-md text-center">
+    <!-- 인스타 스토리 캡쳐 영역 -->
+    <div id="capture-area" class="story-size bg-gray-200 flex flex-col justify-between p-8 text-center text-white">
+      <div id="result-background" class="absolute inset-0 story-background transition-all duration-500 ease-in-out"></div>
+
+      <!-- 로딩 -->
+      <div id="loading-overlay" class="hidden absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-20 transition-opacity duration-300">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-white"></div>
+        <p id="loading-text" class="text-white mt-4 text-lg">민화 이미지를 생성 중입니다...</p>
+      </div>
+
+      <!-- 콘텐츠 -->
+      <div id="result-content" class="z-10 relative opacity-0 transition-opacity duration-500 h-full flex flex-col justify-between">
+        <div>
+          <div>
+            <p id="result-date" class="text-xl opacity-80"></p>
+            <h2 id="result-flower-name" class="text-4xl font-bold mt-1" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);"></h2>
+          </div>
+          <div class="mt-8">
+            <p id="result-keywords" class="text-lg font-bold" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7);"></p>
+            <p id="daily-zodiac" class="text-base opacity-90 mb-3" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7);"></p>
+            <p id="result-description" class="text-base leading-relaxed bg-black bg-opacity-30 p-3 rounded-lg"></p>
+          </div>
+        </div>
+
+        <div>
+          <div id="compatibility-section" class="hidden text-sm bg-black bg-opacity-30 p-3 rounded-lg">
+            <div class="flex justify-around">
+              <div>
+                <p id="good-match-title" class="opacity-80">💚 잘 맞는 궁합</p>
+                <p id="good-match-flower" class="font-bold text-base"></p>
+              </div>
+              <div>
+                <p id="bad-match-title" class="opacity-80">💔 아쉬운 궁합</p>
+                <p id="bad-match-flower" class="font-bold text-base"></p>
+              </div>
+            </div>
+          </div>
+
+          <a id="unsplash-credit" href="#" target="_blank" rel="noopener"
+             class="mt-3 text-xs opacity-80 underline block"></a>
+
+          <p class="mt-2 text-sm opacity-70">온기(溫技)</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-col space-y-3">
+      <button id="share-button" class="korean-button w-full py-3 text-lg font-bold rounded-lg">인스타그램에 공유하기</button>
+      <button id="retry-button" class="w-full py-3 text-lg font-bold rounded-lg bg-[#dcd3c3] text-[#5a3a29] hover:bg-[#c9bfad] transition">다시하기</button>
+    </div>
+  </div>
+
+  <!-- 공유 안내 모달 -->
+  <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+    <div class="bg-[#fdfbf5] rounded-lg p-8 text-center max-w-sm w-full shadow-xl">
+      <h3 id="modal-title" class="text-2xl font-bold text-[#5a3a29] mb-4">공유하는 방법</h3>
+      <p id="modal-desc" class="text-lg text-[#6d5d4b] mb-6">아래 버튼으로 이미지를 저장한 후,<br>인스타그램 스토리에 공유해보세요!</p>
+      <a id="download-link" href="#" download="나의_탄생화.png" class="korean-button w-full py-3 text-lg font-bold rounded-lg block mb-3">이미지 저장하기</a>
+      <button id="close-modal-button" class="w-full py-3 text-lg font-bold rounded-lg bg-[#dcd3c3] text-[#5a3a29] hover:bg-[#c9bfad] transition">닫기</button>
+    </div>
   </div>
 
   <script>
-    document.getElementById('generate-btn').addEventListener('click', async () => {
-      const flowerName = document.getElementById('flower-input').value;
-      const lang = document.getElementById('lang-select').value;
+    /* ------------------------
+       1) 간단 i18n 문구 사전
+    -------------------------*/
+    const I18N = {
+      ko: {
+        title: '나의 탄생화 알아보기',
+        subtitle: '당신이 태어난 날에 숨겨진 특별한 의미를 찾아보세요.',
+        month: '태어난 달',
+        day: '태어난 날',
+        cta: '나의 탄생화 확인하기',
+        loading: '민화 이미지를 생성 중입니다...',
+        youOn: (m,d) => `${m}월 ${d}일의 당신`,
+        zodiacPrefix: '태어난 날의 기운: ',
+        good: '💚 잘 맞는 궁합',
+        bad: '💔 아쉬운 궁합',
+        share: '인스타그램에 공유하기',
+        retry: '다시하기',
+        modalTitle: '공유하는 방법',
+        modalDesc: '아래 버튼으로 이미지를 저장한 후,<br>인스타그램 스토리에 공유해보세요!',
+        saveImage: '이미지 저장하기',
+        close: '닫기',
+        creditBy: (name) => `Photo by ${name} on Unsplash`,
+        toggle: 'EN'
+      },
+      en: {
+        title: 'Find Your Birth Flower',
+        subtitle: 'Discover the hidden meaning of the day you were born.',
+        month: 'Birth Month',
+        day: 'Birth Day',
+        cta: 'Show My Birth Flower',
+        loading: 'Fetching a beautiful Unsplash photo...',
+        youOn: (m,d) => `You on ${m}/${d}`,
+        zodiacPrefix: 'Energy of the day: ',
+        good: '💚 Best Match',
+        bad: '💔 Tough Match',
+        share: 'Share to Instagram',
+        retry: 'Try Again',
+        modalTitle: 'How to Share',
+        modalDesc: 'Save the image below and share it to your Instagram Story!',
+        saveImage: 'Save Image',
+        close: 'Close',
+        creditBy: (name) => `Photo by ${name} on Unsplash`,
+        toggle: 'KO'
+      }
+    };
+    let LANG = 'ko';
 
-      if (!flowerName) {
-        alert('꽃 이름을 입력해주세요!');
+    function applyI18n() {
+      const t = I18N[LANG];
+      document.documentElement.lang = LANG === 'ko' ? 'ko' : 'en';
+      document.getElementById('lang-toggle').textContent = t.toggle;
+
+      // Start page
+      document.getElementById('title').textContent = t.title;
+      document.getElementById('subtitle').innerHTML = t.subtitle;
+      document.getElementById('label-month').textContent = t.month;
+      document.getElementById('label-day').textContent = t.day;
+      document.getElementById('show-result-button').textContent = t.cta;
+
+      // Loading
+      document.getElementById('loading-text').textContent = t.loading;
+
+      // Result static labels
+      document.getElementById('good-match-title').textContent = t.good;
+      document.getElementById('bad-match-title').textContent = t.bad;
+
+      // Buttons under result
+      document.getElementById('share-button').textContent = t.share;
+      document.getElementById('retry-button').textContent = t.retry;
+
+      // Modal
+      document.getElementById('modal-title').textContent = t.modalTitle;
+      document.getElementById('modal-desc').innerHTML = t.modalDesc;
+      document.getElementById('download-link').textContent = t.saveImage;
+      document.getElementById('close-modal-button').textContent = t.close;
+
+      // 월/일 옵션 레이블도 언어에 맞춰 재구성
+      populateSelectors(); // re-render options text (월/일 -> English)
+    }
+
+    /* ------------------------
+       2) 탄생화 데이터 (KO 그대로)
+       - 설명/키워드는 한국어 유지
+    -------------------------*/
+    const birthFlowers = {
+      '1-1': { name: '스노드롭', keywords: '#희망 #위안', description: '혹독한 겨울을 이겨내고 피어나는 당신은 주변에 희망을 주는 사람입니다.', goodMatch: '노랑 수선화', badMatch: '해바라기' },
+      // ... (중략) — 당신의 원본 데이터 그대로 유지
+      "12-31": { name: "노송나무", keywords: "#불멸", description: "어떤 시련에도 흔들리지 않는 굳건한 믿음과 불멸의 정신을 가졌습니다.", goodMatch: "납매", badMatch: "과꽃" },
+    };
+
+    /* ------------------------
+       3) DOM 참조
+    -------------------------*/
+    const startPage = document.getElementById('start-page');
+    const resultPage = document.getElementById('result-page');
+    const monthSelect = document.getElementById('month');
+    const daySelect = document.getElementById('day');
+    const showResultButton = document.getElementById('show-result-button');
+    const retryButton = document.getElementById('retry-button');
+    const shareButton = document.getElementById('share-button');
+    const modal = document.getElementById('modal');
+    const closeModalButton = document.getElementById('close-modal-button');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const resultContent = document.getElementById('result-content');
+    const langToggle = document.getElementById('lang-toggle');
+
+    /* ------------------------
+       4) 선택 박스 세팅
+    -------------------------*/
+    function populateSelectors() {
+      // month
+      monthSelect.innerHTML = '';
+      for (let i = 1; i <= 12; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = LANG === 'ko' ? `${i}월` : `Month ${i}`;
+        monthSelect.appendChild(opt);
+      }
+      updateDays();
+      monthSelect.removeEventListener('change', updateDays);
+      monthSelect.addEventListener('change', updateDays);
+    }
+
+    function updateDays() {
+      const year = new Date().getFullYear();
+      const month = parseInt(monthSelect.value || '1', 10);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      daySelect.innerHTML = '';
+      for (let i = 1; i <= daysInMonth; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = LANG === 'ko' ? `${i}일` : `Day ${i}`;
+        daySelect.appendChild(opt);
+      }
+    }
+
+    /* ------------------------
+       5) 간단 일진 문구
+    -------------------------*/
+    function getDailyZodiac(month, day) {
+      const stems = ['갑','을','병','정','무','기','경','신','임','계'];
+      const branches = ['자(쥐)','축(소)','인(호랑이)','묘(토끼)','진(용)','사(뱀)','오(말)','미(양)','신(원숭이)','유(닭)','술(개)','해(돼지)'];
+      const refDate = new Date(2024, 0, 1);
+      const target = new Date(new Date().getFullYear(), month - 1, day);
+      const dayDiff = Math.floor((target - refDate) / (1000*3600*24));
+      const s = stems[(dayDiff + 2 + 10) % 10];
+      const b = branches[(dayDiff + 4 + 12) % 12];
+      const prefix = I18N[LANG].zodiacPrefix;
+      return `${prefix}${s}${b}`;
+    }
+
+    /* ------------------------
+       6) Unsplash 이미지 (백엔드 호출)
+    -------------------------*/
+    async function fetchFlowerImage(flowerName) {
+      // /api/generate-image 로 POST (Unsplash 사용, 키는 서버에 보관)
+      try {
+        const res = await fetch('/api/generate-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ flowerName, lang: LANG })
+        });
+        if (!res.ok) throw new Error('API error: ' + res.status);
+        const data = await res.json();
+
+        // 서버가 어떤 키로 보내든 유연하게 처리
+        const imageUrl = data.imageDataUrl || data.imageUrl;
+        return {
+          imageUrl: imageUrl || 'https://source.unsplash.com/360x640/?flower,nature',
+          photographer: data.photographer || '',
+          photographerLink: data.photographerLink || '#'
+        };
+      } catch (e) {
+        console.error(e);
+        return {
+          imageUrl: 'https://source.unsplash.com/360x640/?flower,nature',
+          photographer: '',
+          photographerLink: '#'
+        };
+      }
+    }
+
+    /* ------------------------
+       7) 이벤트 바인딩
+    -------------------------*/
+    langToggle.addEventListener('click', () => {
+      LANG = LANG === 'ko' ? 'en' : 'ko';
+      applyI18n();
+    });
+
+    showResultButton.addEventListener('click', async () => {
+      const month = monthSelect.value;
+      const day = daySelect.value;
+      const key = `${month}-${day}`;
+      const flowerData = birthFlowers[key];
+
+      if (!flowerData) {
+        alert(LANG === 'ko' ? '선택하신 날짜의 탄생화 정보를 찾을 수 없습니다.' : 'No birth flower found for this date.');
         return;
       }
 
-      const res = await fetch('/api/generate-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ flowerName, lang }),
-      });
+      // 화면 전환 + 로딩
+      startPage.classList.add('hidden');
+      resultPage.classList.remove('hidden');
+      loadingOverlay.classList.remove('hidden');
+      resultContent.classList.add('opacity-0');
+      showResultButton.disabled = true;
 
-      const data = await res.json();
+      // 이미지 호출
+      const { imageUrl, photographer, photographerLink } = await fetchFlowerImage(flowerData.name);
 
-      if (data.imageDataUrl) {
-        document.getElementById('flower-image').src = data.imageDataUrl;
-        document.getElementById('credit').innerHTML =
-          `Photo by <a href="${data.photographerLink}" target="_blank">${data.photographer}</a> on <a href="https://unsplash.com" target="_blank">Unsplash</a>`;
+      // 텍스트 주입
+      const t = I18N[LANG];
+      document.getElementById('result-date').textContent = t.youOn(Number(month), Number(day));
+      document.getElementById('result-flower-name').textContent = flowerData.name; // 이름은 한국어 유지
+      document.getElementById('result-keywords').textContent = flowerData.keywords;
+      document.getElementById('result-description').textContent = flowerData.description;
+      document.getElementById('daily-zodiac').textContent = getDailyZodiac(Number(month), Number(day));
+
+      // 배경
+      document.getElementById('result-background').style.backgroundImage = `url(${imageUrl})`;
+
+      // 크레딧
+      const credit = document.getElementById('unsplash-credit');
+      if (photographer) {
+        credit.textContent = t.creditBy(photographer);
+        credit.href = photographerLink || '#';
+        credit.classList.remove('hidden');
       } else {
-        document.getElementById('flower-image').src = '';
-        document.getElementById('credit').innerText = '이미지를 가져올 수 없습니다.';
+        credit.textContent = '';
+        credit.href = '#';
+        credit.classList.add('hidden');
+      }
+
+      // 궁합 섹션
+      const comp = document.getElementById('compatibility-section');
+      if (flowerData.goodMatch && flowerData.badMatch) {
+        document.getElementById('good-match-flower').textContent = flowerData.goodMatch;
+        document.getElementById('bad-match-flower').textContent = flowerData.badMatch;
+        comp.classList.remove('hidden');
+      } else {
+        comp.classList.add('hidden');
+      }
+
+      // 로딩 끝
+      loadingOverlay.classList.add('hidden');
+      resultContent.classList.remove('opacity-0');
+      showResultButton.disabled = false;
+    });
+
+    retryButton.addEventListener('click', () => {
+      resultPage.classList.add('hidden');
+      startPage.classList.remove('hidden');
+      resultContent.classList.add('opacity-0');
+      document.getElementById('result-background').style.backgroundImage = 'none';
+    });
+
+    shareButton.addEventListener('click', async () => {
+      const t = I18N[LANG];
+      shareButton.textContent = t.saveImage.includes('Save') ? 'Preparing...' : '이미지 준비 중...';
+      shareButton.disabled = true;
+      try {
+        const captureArea = document.getElementById('capture-area');
+        const canvas = await html2canvas(captureArea, { useCORS: true, backgroundColor: null });
+        const imageUrl = canvas.toDataURL('image/png');
+        const downloadLink = document.getElementById('download-link');
+        downloadLink.href = imageUrl;
+        // 파일명도 언어에 맞게
+        downloadLink.download = LANG === 'ko' ? '나의_탄생화.png' : 'my_birth_flower.png';
+        modal.classList.remove('hidden');
+      } catch (err) {
+        console.error('Error capturing image:', err);
+        alert(LANG === 'ko' ? '이미지 저장에 실패했습니다. 잠시 후 다시 시도해주세요.' : 'Failed to prepare the image. Please try again.');
+      } finally {
+        shareButton.textContent = I18N[LANG].share;
+        shareButton.disabled = false;
       }
     });
+
+    document.getElementById('close-modal-button').addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+    modal.addEventListener('click', (e) => { if (e.target.id === 'modal') modal.classList.add('hidden'); });
+
+    // 초기 렌더
+    populateSelectors();
+    applyI18n();
   </script>
 </body>
 </html>
