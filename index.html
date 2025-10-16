@@ -10,6 +10,7 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="data/birthflowers-compiled.js"></script>
+    <script src="data/birthflower-translations-en.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
@@ -39,15 +40,168 @@
 
         const { useState, useEffect, useMemo, Fragment } = React;
 
+        const HANGUL_REGEX = /[\u3131-\uD79D]/;
+        const ASCII_REGEX = /^[\x00-\x7F]*$/;
+        const translationDictionary = window?.BIRTHFLOWER_TRANSLATIONS_EN || { keywords: {}, names: {} };
+
+        function normalizeDictionaryKey(text) {
+            return (text || '')
+                .toString()
+                .normalize('NFKC')
+                .replace(/[#\s·ㆍ\-]/g, '')
+                .toLowerCase();
+        }
+
+        function buildNormalizedMap(source = {}) {
+            const map = new Map();
+            Object.entries(source).forEach(([ko, en]) => {
+                const normalized = normalizeDictionaryKey(ko);
+                if (normalized && !map.has(normalized)) {
+                    map.set(normalized, en);
+                }
+            });
+            return map;
+        }
+
+        const normalizedKeywordMap = buildNormalizedMap(translationDictionary.keywords);
+        const normalizedNameMap = buildNormalizedMap(translationDictionary.names);
+
+        function translateName(koName, fallback) {
+            if (!koName && fallback) {
+                return fallback;
+            }
+
+            const direct = translationDictionary.names?.[koName] || translationDictionary.names?.[koName?.trim?.()];
+            if (direct) {
+                return direct;
+            }
+
+            const normalized = normalizedNameMap.get(normalizeDictionaryKey(koName));
+            if (normalized) {
+                return normalized;
+            }
+
+            if (fallback && ASCII_REGEX.test(fallback)) {
+                return fallback;
+            }
+
+            return fallback || koName;
+        }
+
+        function translateKeyword(koKeyword) {
+            if (!koKeyword) {
+                return null;
+            }
+
+            const direct = translationDictionary.keywords?.[koKeyword] || translationDictionary.keywords?.[koKeyword?.trim?.()];
+            if (direct) {
+                return direct;
+            }
+
+            const normalized = normalizedKeywordMap.get(normalizeDictionaryKey(koKeyword));
+            return normalized || null;
+        }
+
+        function translateKeywordsFromKo(koKeywords, fallback) {
+            if (!koKeywords) {
+                return fallback;
+            }
+
+            const tokens = koKeywords
+                .split('#')
+                .map(token => token.trim())
+                .filter(Boolean);
+
+            if (tokens.length === 0) {
+                return fallback;
+            }
+
+            const translatedTokens = tokens
+                .map(token => {
+                    const translated = translateKeyword(token);
+                    if (translated) {
+                        return translated;
+                    }
+
+                    const nameCandidate = translateName(token, '');
+                    if (nameCandidate && ASCII_REGEX.test(nameCandidate)) {
+                        return nameCandidate;
+                    }
+
+                    return token;
+                })
+                .map(token => token.replace(/^#+/, '').trim())
+                .filter(Boolean);
+
+            if (translatedTokens.length === 0) {
+                return fallback;
+            }
+
+            const hasHangul = translatedTokens.some(token => HANGUL_REGEX.test(token));
+
+            if (hasHangul) {
+                const asciiOnly = translatedTokens.filter(token => ASCII_REGEX.test(token));
+                if (asciiOnly.length === 0) {
+                    return fallback;
+                }
+                return `#${asciiOnly.join(' #')}`;
+            }
+
+            return `#${translatedTokens.join(' #')}`;
+        }
+
+        function ensureEnglishEntry(koEntry = {}, enEntry = {}) {
+            const nextEntry = { ...enEntry };
+
+            if (!nextEntry.name || HANGUL_REGEX.test(nextEntry.name)) {
+                nextEntry.name = translateName(koEntry.name, koEntry.en_name || nextEntry.name);
+            }
+
+            if (!nextEntry.goodMatch || HANGUL_REGEX.test(nextEntry.goodMatch)) {
+                nextEntry.goodMatch = translateName(koEntry.goodMatch, nextEntry.goodMatch);
+            }
+
+            if (!nextEntry.badMatch || HANGUL_REGEX.test(nextEntry.badMatch)) {
+                nextEntry.badMatch = translateName(koEntry.badMatch, nextEntry.badMatch);
+            }
+
+            if (!nextEntry.keywords || HANGUL_REGEX.test(nextEntry.keywords)) {
+                const translatedKeywords = translateKeywordsFromKo(koEntry.keywords, nextEntry.keywords);
+                if (translatedKeywords) {
+                    nextEntry.keywords = translatedKeywords;
+                }
+            }
+
+            return nextEntry;
+        }
+
+        function sanitizeBirthFlowerDataset(dataset) {
+            if (!dataset || typeof dataset !== 'object' || !dataset.ko) {
+                return dataset;
+            }
+
+            const sanitized = { ...dataset };
+            const sanitizedEnglish = {};
+            const englishEntries = dataset.en || {};
+
+            Object.entries(dataset.ko).forEach(([key, koEntry]) => {
+                sanitizedEnglish[key] = ensureEnglishEntry(koEntry, englishEntries[key] || {});
+            });
+
+            sanitized.en = sanitizedEnglish;
+            return sanitized;
+        }
+
         const DATASET_URL = 'data/birthflowers-compiled.json';
 
         async function fetchBirthFlowerData(signal) {
-            return fetchWithFallback(
+            const dataset = await fetchWithFallback(
                 DATASET_URL,
                 signal,
                 () => window?.BIRTHFLOWER_DATASET,
                 'birth flower dataset'
             );
+            return sanitizeBirthFlowerDataset(dataset);
         }
 
         async function fetchWithFallback(url, signal, fallbackProvider, label) {
