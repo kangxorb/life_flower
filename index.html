@@ -10,7 +10,6 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="data/birthflowers-compiled.js"></script>
-    <script src="data/birthflower-translations-en.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
@@ -40,247 +39,15 @@
 
         const { useState, useEffect, useMemo, Fragment } = React;
 
-        const DATASET_URL = 'data/birthflowers-ko.json';
-        const TRANSLATIONS_URL = 'data/birthflower-translations-en.json';
-        const HANGUL_REGEX = /[\u3131-\uD79D]/;
+        const DATASET_URL = 'data/birthflowers-compiled.json';
 
-        function hasHangul(value) {
-            return typeof value === 'string' && HANGUL_REGEX.test(value);
-        }
-
-        function createRomanizer() {
-            const INITIALS = ['g', 'kk', 'n', 'd', 'tt', 'r', 'm', 'b', 'pp', 's', 'ss', '', 'j', 'jj', 'ch', 'k', 't', 'p', 'h'];
-            const MEDIALS = ['a', 'ae', 'ya', 'yae', 'eo', 'e', 'yeo', 'ye', 'o', 'wa', 'wae', 'oe', 'yo', 'u', 'wo', 'we', 'wi', 'yu', 'eu', 'ui', 'i'];
-            const FINALS = ['', 'k', 'k', 'ks', 'n', 'nj', 'nh', 't', 'l', 'lk', 'lm', 'lb', 'ls', 'lt', 'lp', 'lh', 'm', 'p', 'ps', 's', 'ss', 'ng', 'j', 'ch', 'k', 't', 'p', 'h'];
-
-            return function romanize(input = '') {
-                if (!input) {
-                    return '';
-                }
-
-                let result = '';
-                for (const char of input) {
-                    const code = char.charCodeAt(0);
-                    if (code < 0xac00 || code > 0xd7a3) {
-                        result += char;
-                        continue;
-                    }
-
-                    const syllableIndex = code - 0xac00;
-                    const initialIndex = Math.floor(syllableIndex / 588);
-                    const medialIndex = Math.floor((syllableIndex % 588) / 28);
-                    const finalIndex = syllableIndex % 28;
-
-                    const initial = INITIALS[initialIndex] || '';
-                    const medial = MEDIALS[medialIndex] || '';
-                    const final = FINALS[finalIndex] || '';
-
-                    result += initial + medial + final;
-                }
-                return result;
-            };
-        }
-
-        const romanizeHangul = createRomanizer();
-
-        function toDisplayCase(value = '') {
-            if (!value) {
-                return '';
-            }
-            if (value === value.toLowerCase()) {
-                return value
-                    .split(/(\s+|-)/)
-                    .map(part => {
-                        if (!part.trim() || part === '-') {
-                            return part;
-                        }
-                        return part.charAt(0).toUpperCase() + part.slice(1);
-                    })
-                    .join('');
-            }
-            return value;
-        }
-
-        function capitalizeSentence(value = '') {
-            if (!value) {
-                return '';
-            }
-            const trimmed = value.trim();
-            if (!trimmed) {
-                return '';
-            }
-            return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-        }
-
-        function findDictionaryValue(dictionary, rawValue) {
-            if (!dictionary || !rawValue) {
-                return null;
-            }
-            const normalized = `${rawValue}`.trim();
-            if (!normalized) {
-                return null;
-            }
-            const spaced = normalized.replace(/\s+/g, ' ');
-            const variants = [normalized, spaced, spaced.replace(/\s+/g, ''), spaced.replace(/\s+/g, '-'), spaced.replace(/\s+/g, '·')];
-            for (const candidate of variants) {
-                if (Object.prototype.hasOwnProperty.call(dictionary, candidate)) {
-                    return dictionary[candidate];
-                }
-            }
-            return null;
-        }
-
-        function formatKeywords(keywords = []) {
-            if (!Array.isArray(keywords)) {
-                if (typeof keywords === 'string') {
-                    return keywords;
-                }
-                return '';
-            }
-            return keywords.map(keyword => `#${keyword}`).join(' ');
-        }
-
-        function normalizeSourceData(rawKo) {
-            if (!rawKo) {
-                throw new Error('No birth flower dataset available.');
-            }
-
-            const entries = {};
-
-            if (Array.isArray(rawKo.months)) {
-                rawKo.months.forEach(monthEntry => {
-                    const month = Number(monthEntry.month);
-                    (monthEntry.days || []).forEach(dayEntry => {
-                        const day = Number(dayEntry.day);
-                        const key = `${month}-${day}`;
-                        entries[key] = {
-                            key,
-                            month,
-                            day,
-                            name: dayEntry.name,
-                            enName: dayEntry.enName,
-                            keywords: Array.isArray(dayEntry.keywords) ? dayEntry.keywords : [],
-                            description: dayEntry.description,
-                            goodMatch: dayEntry.goodMatch,
-                            badMatch: dayEntry.badMatch,
-                        };
-                    });
-                });
-                return entries;
-            }
-
-            if (typeof rawKo === 'object' && rawKo !== null) {
-                Object.entries(rawKo).forEach(([key, value]) => {
-                    if (!key.includes('-')) {
-                        return;
-                    }
-                    const [month, day] = key.split('-').map(Number);
-                    const keywords = typeof value.keywords === 'string'
-                        ? value.keywords.split('#').map(token => token.trim()).filter(Boolean)
-                        : [];
-                    entries[key] = {
-                        key,
-                        month,
-                        day,
-                        name: value.name,
-                        enName: value.en_name || value.enName,
-                        keywords,
-                        description: value.description,
-                        goodMatch: value.goodMatch,
-                        badMatch: value.badMatch,
-                    };
-                });
-                if (Object.keys(entries).length > 0) {
-                    return entries;
-                }
-            }
-
-            throw new Error('Unrecognized birth flower dataset format.');
-        }
-
-        function buildKoreanBranch(sourceEntries) {
-            const result = {};
-            Object.values(sourceEntries).forEach(entry => {
-                result[entry.key] = {
-                    name: entry.name,
-                    en_name: entry.enName || entry.name,
-                    keywords: formatKeywords(entry.keywords),
-                    description: entry.description,
-                    goodMatch: entry.goodMatch,
-                    badMatch: entry.badMatch,
-                };
-            });
-            return result;
-        }
-
-        function createTranslationSystem(translations = {}) {
-            const nameDictionary = translations.names || {};
-            const keywordDictionary = translations.keywords || {};
-
-            const translateName = (koreanName, fallbackName, enName) => {
-                const dictionaryValue = findDictionaryValue(nameDictionary, koreanName);
-                const asciiFallback = !hasHangul(enName) && enName ? enName : (!hasHangul(fallbackName) && fallbackName ? fallbackName : '');
-                const base = dictionaryValue || asciiFallback || romanizeHangul(koreanName || '');
-                return toDisplayCase(base);
-            };
-
-            const translateMatch = (value, fallback) => {
-                if (!value) {
-                    return '';
-                }
-                const dictionaryValue = findDictionaryValue(nameDictionary, value);
-                const asciiFallback = !hasHangul(fallback) && fallback ? fallback : '';
-                const base = dictionaryValue || asciiFallback || romanizeHangul(value);
-                return toDisplayCase(base);
-            };
-
-            const translateKeywords = (keywordsList, fallbackString) => {
-                const list = Array.isArray(keywordsList) ? keywordsList : [];
-                const fallbackTokens = typeof fallbackString === 'string'
-                    ? fallbackString.split(/\s+/).filter(Boolean).map(token => token.startsWith('#') ? token.slice(1) : token)
-                    : [];
-
-                return list.map((keyword, index) => {
-                    const fallbackToken = fallbackTokens[index];
-                    const dictionaryValue = findDictionaryValue(keywordDictionary, keyword);
-                    const asciiFallback = !hasHangul(fallbackToken) && fallbackToken ? fallbackToken : '';
-                    const base = dictionaryValue || asciiFallback || romanizeHangul(keyword);
-                    return `#${toDisplayCase(base)}`;
-                }).join(' ');
-            };
-
-            const translateDescription = (value, fallback) => {
-                const asciiFallback = !hasHangul(fallback) && fallback ? fallback : '';
-                if (asciiFallback) {
-                    return asciiFallback;
-                }
-                const romanized = romanizeHangul(value || '');
-                if (!romanized) {
-                    return '';
-                }
-                return capitalizeSentence(romanized);
-            };
-
-            return function translateEntry(entry, fallback = {}) {
-                return {
-                    name: translateName(entry.name, fallback.name || fallback.en_name, entry.enName),
-                    en_name: translateName(entry.name, fallback.en_name || fallback.name, entry.enName),
-                    keywords: translateKeywords(entry.keywords, fallback.keywords),
-                    description: translateDescription(entry.description, fallback.description),
-                    goodMatch: translateMatch(entry.goodMatch, fallback.goodMatch),
-                    badMatch: translateMatch(entry.badMatch, fallback.badMatch),
-                };
-            };
-        }
-
-        function buildEnglishBranch(sourceEntries, translationDictionary, fallbackEnglishEntries = {}) {
-            const translateEntry = createTranslationSystem(translationDictionary);
-            const result = {};
-            Object.values(sourceEntries).forEach(entry => {
-                const fallbackEntry = fallbackEnglishEntries[entry.key] || {};
-                result[entry.key] = translateEntry(entry, fallbackEntry);
-            });
-            return result;
+        async function fetchBirthFlowerData(signal) {
+            return fetchWithFallback(
+                DATASET_URL,
+                signal,
+                () => window?.BIRTHFLOWER_DATASET,
+                'birth flower dataset'
+            );
         }
 
         async function fetchWithFallback(url, signal, fallbackProvider, label) {
@@ -309,20 +76,6 @@
             }
         }
 
-        async function fetchBirthFlowerData(signal) {
-            const [rawKo, translationDictionary] = await Promise.all([
-                fetchWithFallback(DATASET_URL, signal, () => window?.BIRTHFLOWER_DATASET?.ko, 'birth flower base dataset'),
-                fetchWithFallback(TRANSLATIONS_URL, signal, () => window?.BIRTHFLOWER_TRANSLATIONS_EN, 'translation dictionary'),
-            ]);
-
-            const sourceEntries = normalizeSourceData(rawKo);
-            const fallbackEnglish = window?.BIRTHFLOWER_DATASET?.en || {};
-
-            return {
-                ko: buildKoreanBranch(sourceEntries),
-                en: buildEnglishBranch(sourceEntries, translationDictionary, fallbackEnglish),
-            };
-        }
         const translations = {
             ko: {
                 mainTitle: "나의 탄생화 알아보기", mainSubtitle: "당신이 태어난 날, 숨겨진 특별한 의미를 찾아보세요.", resultButton: "나의 탄생화 확인하기", loadingText: "AI가 당신의 꽃을 그리고 있어요...", shareButton: "이미지 저장하기", retryButton: "처음으로", modalTitle: "이미지 저장", modalText: "아래 버튼을 눌러 이미지를 저장하세요.", downloadButton: "저장하기", closeButton: "닫기", months: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"], days: "일", errorAlert: "선택하신 날짜의 탄생화 정보를 찾을 수 없습니다.", captureError: "이미지 캡처에 실패했습니다. 다시 시도해주세요.", sharingText: "이미지 준비 중...", debouncingText: "확인 중...",
