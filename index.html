@@ -46,16 +46,46 @@
             const koData = {};
             const enData = {};
             const koNameToEnNameMap = {};
+            const koNameToEnNameCanonicalMap = {};
             const rawKeywordsByKey = {};
 
             const keywordTranslations = translationData?.keywords || {};
             const nameTranslations = translationData?.names || {};
 
+            const toCanonicalKey = (value) => {
+                if (typeof value !== 'string') {
+                    return '';
+                }
+                return value
+                    .normalize?.('NFC')
+                    ?.replace(/[\s·•ㆍ]/g, '')
+                    ?.trim?.() || '';
+            };
+
+            const buildCanonicalMap = (dictionary) => {
+                return Object.entries(dictionary || {}).reduce((acc, [key, value]) => {
+                    const canonicalKey = toCanonicalKey(key);
+                    if (canonicalKey && !acc[canonicalKey]) {
+                        acc[canonicalKey] = value;
+                    }
+                    return acc;
+                }, {});
+            };
+
+            const canonicalKeywordTranslations = buildCanonicalMap(keywordTranslations);
+            const canonicalNameTranslations = buildCanonicalMap(nameTranslations);
+
             const translateName = (value) => {
                 if (!value) {
                     return value;
                 }
-                return koNameToEnNameMap[value] || nameTranslations[value] || value;
+                const canonicalValue = toCanonicalKey(value);
+                return (
+                    koNameToEnNameMap[value] ||
+                    nameTranslations[value] ||
+                    (canonicalValue && (koNameToEnNameCanonicalMap[canonicalValue] || canonicalNameTranslations[canonicalValue])) ||
+                    value
+                );
             };
 
             const translateKeyword = (keyword) => {
@@ -63,7 +93,12 @@
                 if (!trimmed) {
                     return '';
                 }
-                return keywordTranslations[trimmed] || trimmed;
+                const canonicalKeyword = toCanonicalKey(trimmed);
+                return (
+                    keywordTranslations[trimmed] ||
+                    (canonicalKeyword && canonicalKeywordTranslations[canonicalKeyword]) ||
+                    trimmed
+                );
             };
 
             months.forEach(monthEntry => {
@@ -97,6 +132,10 @@
 
                     if (dayEntry?.name && dayEntry?.enName) {
                         koNameToEnNameMap[dayEntry.name] = dayEntry.enName;
+                        const canonicalKey = toCanonicalKey(dayEntry.name);
+                        if (canonicalKey && !koNameToEnNameCanonicalMap[canonicalKey]) {
+                            koNameToEnNameCanonicalMap[canonicalKey] = dayEntry.enName;
+                        }
                     }
                 });
             });
