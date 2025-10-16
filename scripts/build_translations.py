@@ -1,4 +1,6 @@
 import json
+import re
+import unicodedata
 from pathlib import Path
 
 BASE_KEYWORD_PAIRS = """
@@ -864,17 +866,154 @@ def parse_pairs(text):
         mapping[source.strip()] = target.strip()
     return mapping
 
+CANONICAL_PATTERN = re.compile(r"[\s·•ㆍ]")
+HANGUL_PATTERN = re.compile(r"[\u3131-\uD79D]")
+
+
+def to_canonical(value: str) -> str:
+    if not value:
+        return ""
+    normalized = unicodedata.normalize("NFC", value)
+    return CANONICAL_PATTERN.sub("", normalized)
+
+
+def build_canonical_lookup(source):
+    lookup = {}
+    for key, value in source.items():
+        canonical_key = to_canonical(key)
+        if canonical_key and canonical_key not in lookup:
+            lookup[canonical_key] = value
+    return lookup
+
+
+def has_hangul(value: str) -> bool:
+    return bool(HANGUL_PATTERN.search(value or ""))
+
+
+def has_translation(term, mapping, canonical_lookup):
+    if term in mapping:
+        return True
+    canonical = to_canonical(term)
+    if canonical and canonical in canonical_lookup:
+        return True
+    stripped = term.replace(" ", "") if isinstance(term, str) else term
+    if stripped and stripped != term:
+        if stripped in mapping:
+            return True
+        canonical_stripped = to_canonical(stripped)
+        if canonical_stripped and canonical_stripped in canonical_lookup:
+            return True
+    return False
+
+
+def extend_with_dataset(keyword_map, name_map):
+    data_path = Path("data/birthflowers-ko.json")
+    if not data_path.exists():
+        return
+
+    dataset = json.loads(data_path.read_text())
+    canonical_keywords = build_canonical_lookup(keyword_map)
+    canonical_names = build_canonical_lookup(name_map)
+
+    pending_keyword_terms = set()
+    pending_name_terms = set()
+
+    for month in dataset.get("months", []):
+        for day in month.get("days", []):
+            name = (day or {}).get("name")
+            en_name = (day or {}).get("enName")
+            if name and en_name:
+                if name not in name_map:
+                    name_map[name] = en_name
+                canonical_name = to_canonical(name)
+                if canonical_name and canonical_name not in canonical_names:
+                    canonical_names[canonical_name] = en_name
+
+            for keyword in (day or {}).get("keywords", []) or []:
+                if keyword in keyword_map:
+                    continue
+                canonical_keyword = to_canonical(keyword)
+                translation = None
+                if canonical_keyword:
+                    translation = canonical_keywords.get(canonical_keyword)
+                if translation:
+                    keyword_map[keyword] = translation
+                    canonical_keywords.setdefault(canonical_keyword, translation)
+                else:
+                    if has_hangul(keyword):
+                        pending_keyword_terms.add(keyword)
+
+            for related in ((day or {}).get("goodMatch"), (day or {}).get("badMatch")):
+                if not related:
+                    continue
+                if related in name_map:
+                    continue
+                canonical_related = to_canonical(related)
+                translation = None
+                if canonical_related:
+                    translation = canonical_names.get(canonical_related)
+                if translation:
+                    name_map[related] = translation
+                    canonical_names.setdefault(canonical_related, translation)
+                elif en_name and related == name:
+                    name_map[related] = en_name
+                    canonical = to_canonical(related)
+                    if canonical and canonical not in canonical_names:
+                        canonical_names[canonical] = en_name
+                elif has_hangul(related):
+                    pending_name_terms.add(related)
+
+    # Refresh canonical lookups with the newly added dataset translations.
+    canonical_keywords.update(build_canonical_lookup(keyword_map))
+    canonical_names.update(build_canonical_lookup(name_map))
+
+    unresolved_keywords = {
+        term
+        for term in pending_keyword_terms
+        if not has_translation(term, keyword_map, canonical_keywords)
+    }
+    unresolved_names = {
+        term
+        for term in pending_name_terms
+        if not has_translation(term, name_map, canonical_names)
+    }
+
+    unresolved_terms = sorted(unresolved_keywords | unresolved_names)
+
+    if unresolved_terms:
+        Path("data/keyword_missing_debug.json").write_text(
+            json.dumps(unresolved_terms, ensure_ascii=False, indent=2)
+        )
+    else:
+        debug_path = Path("data/keyword_missing_debug.json")
+        if debug_path.exists():
+            debug_path.unlink()
+
+
+def write_outputs(output_data):
+    Path("data").mkdir(exist_ok=True)
+    json_path = Path("data/birthflower-translations-en.json")
+    json_path.write_text(json.dumps(output_data, ensure_ascii=False, indent=2))
+
+    js_path = Path("data/birthflower-translations-en.js")
+    js_payload = "window.BIRTHFLOWER_TRANSLATIONS_EN = " + json.dumps(
+        output_data, ensure_ascii=False, indent=2
+    ) + ";\n"
+    js_path.write_text(js_payload)
+
+
 keyword_translations = parse_pairs(BASE_KEYWORD_PAIRS)
 keyword_translations.update(parse_pairs(ADDITIONAL_KEYWORD_PAIRS))
-extra_path = Path('data/keyword_pairs_extra.txt')
+extra_path = Path("data/keyword_pairs_extra.txt")
 if extra_path.exists():
     keyword_translations.update(parse_pairs(extra_path.read_text()))
 name_translations = parse_pairs(NAME_PAIRS)
 
+extend_with_dataset(keyword_translations, name_translations)
+
 output = {
-    "keywords": keyword_translations,
-    "names": name_translations,
+    "keywords": dict(sorted(keyword_translations.items())),
+    "names": dict(sorted(name_translations.items())),
 }
 
-Path('data').mkdir(exist_ok=True)
-Path('data/birthflower-translations-en.json').write_text(json.dumps(output, ensure_ascii=False, indent=2))
+write_outputs(output)
