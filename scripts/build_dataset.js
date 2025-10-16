@@ -7,6 +7,8 @@ const rawDataPath = path.join(projectRoot, 'data', 'birthflowers-ko.json');
 const translationsPath = path.join(projectRoot, 'data', 'birthflower-translations-en.json');
 const outputJsonPath = path.join(projectRoot, 'data', 'birthflowers-compiled.json');
 const outputJsPath = path.join(projectRoot, 'data', 'birthflowers-compiled.js');
+const outputEnglishJsonPath = path.join(projectRoot, 'data', 'birthflowers-en.json');
+const outputEnglishJsPath = path.join(projectRoot, 'data', 'birthflowers-en.js');
 
 const HANGUL_REGEX = /[\u3131-\uD79D]/;
 
@@ -138,6 +140,7 @@ function buildDataset(rawData, translationData = {}) {
 
     const koData = {};
     const enData = {};
+    const englishMonths = [];
     const koNameToEnName = {};
     const koNameToEnNameCanonical = {};
 
@@ -204,6 +207,8 @@ function buildDataset(rawData, translationData = {}) {
             return;
         }
 
+        const englishDays = [];
+
         days.forEach(dayEntry => {
             const day = dayEntry?.day;
             if (!day) {
@@ -232,7 +237,11 @@ function buildDataset(rawData, translationData = {}) {
                     koNameToEnNameCanonical[canonicalKey] = dayEntry.enName;
                 }
             }
+
+            englishDays.push({ key, month, day });
         });
+
+        englishMonths.push({ month, days: englishDays });
     });
 
     Object.entries(koData).forEach(([key, koItem]) => {
@@ -273,7 +282,7 @@ function buildDataset(rawData, translationData = {}) {
             missingMatchTranslations.add(koItem.badMatch);
         }
 
-        enData[key] = {
+        const englishEntry = {
             name: englishName,
             en_name: englishName,
             keywords: enKeywords,
@@ -284,6 +293,16 @@ function buildDataset(rawData, translationData = {}) {
             goodMatch: goodMatchResult.text,
             badMatch: badMatchResult.text,
         };
+
+        enData[key] = englishEntry;
+
+        const monthEntry = englishMonths.find(entry => entry.days.some(day => day.key === key));
+        if (monthEntry) {
+            const dayEntry = monthEntry.days.find(day => day.key === key);
+            if (dayEntry) {
+                dayEntry.entry = englishEntry;
+            }
+        }
     });
 
     const offending = [];
@@ -307,12 +326,37 @@ function buildDataset(rawData, translationData = {}) {
         throw new Error(`Missing English match translations for: ${Array.from(missingMatchTranslations).slice(0, 10).join(', ')}`);
     }
 
-    return { ko: koData, en: enData };
+    const englishMonthsFormatted = englishMonths
+        .filter(monthEntry => monthEntry?.month)
+        .map(monthEntry => ({
+            month: monthEntry.month,
+            days: monthEntry.days
+                .filter(day => day?.day && day.entry)
+                .map(day => ({
+                    day: day.day,
+                    name: day.entry.name,
+                    enName: day.entry.en_name,
+                    keywords: day.entry.keywordsList || [],
+                    keywordsText: day.entry.keywords,
+                    description: day.entry.description,
+                    goodMatch: day.entry.goodMatch,
+                    badMatch: day.entry.badMatch,
+                })),
+        }));
+
+    return { ko: koData, en: enData, enMonths: englishMonthsFormatted };
 }
 
 function writeDataset(dataset) {
-    fs.writeFileSync(outputJsonPath, JSON.stringify(dataset, null, 2));
-    fs.writeFileSync(outputJsPath, `window.BIRTHFLOWER_DATASET = ${JSON.stringify(dataset)};`);
+    const { ko, en, enMonths } = dataset;
+    const compiled = { ko, en };
+
+    fs.writeFileSync(outputJsonPath, JSON.stringify(compiled, null, 2));
+    fs.writeFileSync(outputJsPath, `window.BIRTHFLOWER_DATASET = ${JSON.stringify(compiled)};`);
+
+    const englishPayload = { months: enMonths };
+    fs.writeFileSync(outputEnglishJsonPath, JSON.stringify(englishPayload, null, 2));
+    fs.writeFileSync(outputEnglishJsPath, `window.BIRTHFLOWER_DATASET_EN = ${JSON.stringify(englishPayload)};`);
 }
 
 function main() {
