@@ -172,6 +172,24 @@
                 }
             }
 
+            if (!Array.isArray(nextEntry.keywordsList) || nextEntry.keywordsList.some(token => HANGUL_REGEX.test(token))) {
+                const koKeywords = koEntry.keywords || '';
+                const tokens = koKeywords
+                    ? koKeywords.split('#').map(token => token.trim()).filter(Boolean)
+                    : [];
+                const translatedTokens = tokens
+                    .map(token => translateKeyword(token) || translateName(token, ''))
+                    .filter(Boolean)
+                    .map(token => token.replace(/^#+/, '').trim())
+                    .filter(Boolean);
+                if (translatedTokens.length > 0) {
+                    nextEntry.keywordsList = translatedTokens;
+                    nextEntry.keywords = `#${translatedTokens.join(' #')}`;
+                }
+            } else if (nextEntry.keywordsList.length > 0) {
+                nextEntry.keywords = `#${nextEntry.keywordsList.join(' #')}`;
+            }
+
             return nextEntry;
         }
 

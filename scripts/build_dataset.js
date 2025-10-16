@@ -113,18 +113,19 @@ function buildCanonicalMap(dictionary = {}) {
     }, {});
 }
 
-function selectTranslation(candidates, fallback) {
+function selectTranslationWithSource(candidates, fallback) {
     for (const candidate of candidates) {
-        if (typeof candidate === 'string' && candidate.trim() && !HANGUL_REGEX.test(candidate)) {
-            return candidate.trim();
+        const value = candidate?.value;
+        if (typeof value === 'string' && value.trim() && !HANGUL_REGEX.test(value)) {
+            return { text: value.trim(), source: candidate.source };
         }
     }
 
-    if (typeof fallback === 'string') {
-        return fallback.trim();
+    if (typeof fallback === 'string' && fallback.trim()) {
+        return { text: fallback.trim(), source: 'fallback' };
     }
 
-    return '';
+    return { text: '', source: 'fallback' };
 }
 
 function buildDataset(rawData, translationData = {}) {
@@ -143,35 +144,58 @@ function buildDataset(rawData, translationData = {}) {
     const rawKeywordsByKey = {};
 
     const translateName = (value) => {
-        if (!value) return '';
+        if (!value) {
+            return { text: '', source: 'empty' };
+        }
         const canonicalValue = toCanonicalKey(value);
         const strippedValue = value.replace(/\s+/g, '');
-        const selected = selectTranslation([
-            nameTranslations[value],
-            strippedValue !== value ? nameTranslations[strippedValue] : null,
-            canonicalValue && nameTranslations[canonicalValue],
-            canonicalValue && canonicalNameTranslations[canonicalValue],
-            canonicalValue && koNameToEnNameCanonical[canonicalValue],
-            koNameToEnName[value],
-        ], value);
+        const { text, source } = selectTranslationWithSource([
+            { value: nameTranslations[value], source: 'dictionary:exact' },
+            strippedValue !== value ? { value: nameTranslations[strippedValue], source: 'dictionary:stripped' } : null,
+            canonicalValue ? { value: nameTranslations[canonicalValue], source: 'dictionary:canonical' } : null,
+            canonicalValue ? { value: canonicalNameTranslations[canonicalValue], source: 'dictionary:normalized' } : null,
+            canonicalValue ? { value: koNameToEnNameCanonical[canonicalValue], source: 'dataset:canonical' } : null,
+            { value: koNameToEnName[value], source: 'dataset:exact' },
+        ].filter(Boolean), value);
 
-        return ensureAscii(selected, value);
+        if (source === 'fallback') {
+            return { text: ensureAscii('', value), source };
+        }
+
+        return { text: ensureAscii(text, value), source };
     };
 
     const translateKeyword = (keyword) => {
         const trimmed = keyword?.trim?.() || '';
-        if (!trimmed) return '';
+        if (!trimmed) {
+            return { text: '', source: 'empty' };
+        }
         const canonicalKeyword = toCanonicalKey(trimmed);
         const strippedKeyword = trimmed.replace(/\s+/g, '');
-        const selected = selectTranslation([
-            keywordTranslations[trimmed],
-            strippedKeyword !== trimmed ? keywordTranslations[strippedKeyword] : null,
-            canonicalKeyword && keywordTranslations[canonicalKeyword],
-            canonicalKeyword && canonicalKeywordTranslations[canonicalKeyword],
-        ], trimmed);
+        const { text, source } = selectTranslationWithSource([
+            { value: keywordTranslations[trimmed], source: 'dictionary:exact' },
+            strippedKeyword !== trimmed ? { value: keywordTranslations[strippedKeyword], source: 'dictionary:stripped' } : null,
+            canonicalKeyword ? { value: keywordTranslations[canonicalKeyword], source: 'dictionary:canonical' } : null,
+            canonicalKeyword ? { value: canonicalKeywordTranslations[canonicalKeyword], source: 'dictionary:normalized' } : null,
+        ].filter(Boolean), trimmed);
 
-        return ensureAscii(selected, trimmed);
+        const formatKeyword = (value) => {
+            if (!value) {
+                return '';
+            }
+            const lowered = value.toLowerCase();
+            return toDisplayCase(lowered);
+        };
+
+        if (source === 'fallback') {
+            return { text: formatKeyword(ensureAscii('', trimmed)), source };
+        }
+
+        return { text: formatKeyword(ensureAscii(text, trimmed)), source };
     };
+
+    const missingKeywordTranslations = new Set();
+    const missingMatchTranslations = new Set();
 
     months.forEach(monthEntry => {
         const month = monthEntry?.month;
@@ -213,23 +237,52 @@ function buildDataset(rawData, translationData = {}) {
 
     Object.entries(koData).forEach(([key, koItem]) => {
         const keywords = rawKeywordsByKey[key] || [];
-        const enKeywords = keywords
-            .map(keyword => translateKeyword(keyword))
+        const englishKeywordResults = keywords
+            .map(keyword => ({
+                original: keyword,
+                result: translateKeyword(keyword),
+            }))
             .filter(Boolean)
+            .map(({ original, result }) => {
+                if (!result.text) {
+                    return null;
+                }
+                if (result.source === 'fallback') {
+                    missingKeywordTranslations.add(original);
+                }
+                return result.text;
+            })
+            .filter(Boolean);
+
+        const englishKeywordList = englishKeywordResults;
+
+        const enKeywords = englishKeywordList
             .map(translated => `#${translated}`)
             .join(' ');
 
         const englishName = ensureAscii(koItem.en_name, koItem.name);
 
+        const goodMatchResult = translateName(koItem.goodMatch);
+        const badMatchResult = translateName(koItem.badMatch);
+
+        if (goodMatchResult.source === 'fallback' && koItem.goodMatch) {
+            missingMatchTranslations.add(koItem.goodMatch);
+        }
+
+        if (badMatchResult.source === 'fallback' && koItem.badMatch) {
+            missingMatchTranslations.add(koItem.badMatch);
+        }
+
         enData[key] = {
             name: englishName,
             en_name: englishName,
             keywords: enKeywords,
+            keywordsList: englishKeywordList,
             description: englishName
                 ? `You, who resemble the ${englishName} that blooms after enduring a harsh winter, are someone who brings hope to those around you.`
                 : 'You are someone who brings hope to those around you.',
-            goodMatch: translateName(koItem.goodMatch),
-            badMatch: translateName(koItem.badMatch),
+            goodMatch: goodMatchResult.text,
+            badMatch: badMatchResult.text,
         };
     });
 
@@ -244,6 +297,14 @@ function buildDataset(rawData, translationData = {}) {
 
     if (offending.length > 0) {
         throw new Error(`English dataset still contains Hangul entries: ${offending.slice(0, 5).join(', ')}`);
+    }
+
+    if (missingKeywordTranslations.size > 0) {
+        throw new Error(`Missing English keyword translations for: ${Array.from(missingKeywordTranslations).slice(0, 10).join(', ')}`);
+    }
+
+    if (missingMatchTranslations.size > 0) {
+        throw new Error(`Missing English match translations for: ${Array.from(missingMatchTranslations).slice(0, 10).join(', ')}`);
     }
 
     return { ko: koData, en: enData };
