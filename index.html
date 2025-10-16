@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Lora:wght@400;700&display=swap">
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="data/birthflower-translations-en.js"></script>
+    <script src="data/birthflowers-compiled.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
@@ -39,152 +39,7 @@
 
         const { useState, useEffect, useMemo, Fragment } = React;
 
-        const DATA_URL = 'data/birthflowers-ko.json';
-        const TRANSLATIONS_URL = 'data/birthflower-translations-en.json';
-
-        function buildBirthFlowerDataset(rawData, translationData) {
-            const months = rawData?.months || [];
-            const koData = {};
-            const enData = {};
-            const koNameToEnNameMap = {};
-            const koNameToEnNameCanonicalMap = {};
-            const rawKeywordsByKey = {};
-
-            const keywordTranslations = translationData?.keywords || {};
-            const nameTranslations = translationData?.names || {};
-
-            const hangulRegex = /[\u3131-\uD79D]/;
-
-            const selectTranslation = (candidates, fallback) => {
-                for (const candidate of candidates) {
-                    if (typeof candidate === 'string' && candidate && !hangulRegex.test(candidate)) {
-                        return candidate;
-                    }
-                }
-                return fallback;
-            };
-
-            const toCanonicalKey = (value) => {
-                if (typeof value !== 'string') {
-                    return '';
-                }
-                return value
-                    .normalize?.('NFC')
-                    ?.replace(/[\s·•ㆍ]/g, '')
-                    ?.trim?.() || '';
-            };
-
-            const buildCanonicalMap = (dictionary) => {
-                return Object.entries(dictionary || {}).reduce((acc, [key, value]) => {
-                    const canonicalKey = toCanonicalKey(key);
-                    if (canonicalKey && !acc[canonicalKey]) {
-                        acc[canonicalKey] = value;
-                    }
-                    return acc;
-                }, {});
-            };
-
-            const canonicalKeywordTranslations = buildCanonicalMap(keywordTranslations);
-            const canonicalNameTranslations = buildCanonicalMap(nameTranslations);
-
-            const translateName = (value) => {
-                if (!value) {
-                    return value;
-                }
-                const canonicalValue = toCanonicalKey(value);
-                const strippedValue = value.replace(/\s+/g, '');
-                return selectTranslation(
-                    [
-                        koNameToEnNameMap[value],
-                        nameTranslations[value],
-                        strippedValue !== value ? nameTranslations[strippedValue] : null,
-                        canonicalValue && (koNameToEnNameCanonicalMap[canonicalValue] || canonicalNameTranslations[canonicalValue]),
-                        canonicalValue && nameTranslations[canonicalValue],
-                        strippedValue && strippedValue !== canonicalValue ? nameTranslations[toCanonicalKey(strippedValue)] : null,
-                    ],
-                    value
-                );
-            };
-
-            const translateKeyword = (keyword) => {
-                const trimmed = keyword?.trim?.() || '';
-                if (!trimmed) {
-                    return '';
-                }
-                const canonicalKeyword = toCanonicalKey(trimmed);
-                const strippedKeyword = trimmed.replace(/\s+/g, '');
-                return selectTranslation(
-                    [
-                        keywordTranslations[trimmed],
-                        strippedKeyword !== trimmed ? keywordTranslations[strippedKeyword] : null,
-                        canonicalKeyword && keywordTranslations[canonicalKeyword],
-                        canonicalKeyword && canonicalKeywordTranslations[canonicalKeyword],
-                        strippedKeyword && strippedKeyword !== canonicalKeyword ? keywordTranslations[toCanonicalKey(strippedKeyword)] : null,
-                        strippedKeyword && strippedKeyword !== canonicalKeyword ? canonicalKeywordTranslations[toCanonicalKey(strippedKeyword)] : null,
-                    ],
-                    trimmed
-                );
-            };
-
-            months.forEach(monthEntry => {
-                const month = monthEntry?.month;
-                const days = monthEntry?.days || [];
-
-                if (!month || !Array.isArray(days)) {
-                    return;
-                }
-
-                days.forEach(dayEntry => {
-                    const day = dayEntry?.day;
-                    if (!day) {
-                        return;
-                    }
-
-                    const key = `${month}-${day}`;
-                    const keywordsArray = Array.isArray(dayEntry.keywords) ? dayEntry.keywords : [];
-                    const koKeywords = keywordsArray.map(keyword => `#${keyword}`).join(' ');
-
-                    koData[key] = {
-                        name: dayEntry.name,
-                        en_name: dayEntry.enName,
-                        keywords: koKeywords,
-                        description: dayEntry.description,
-                        goodMatch: dayEntry.goodMatch,
-                        badMatch: dayEntry.badMatch
-                    };
-
-                    rawKeywordsByKey[key] = keywordsArray;
-
-                    if (dayEntry?.name && dayEntry?.enName) {
-                        koNameToEnNameMap[dayEntry.name] = dayEntry.enName;
-                        const canonicalKey = toCanonicalKey(dayEntry.name);
-                        if (canonicalKey && !koNameToEnNameCanonicalMap[canonicalKey]) {
-                            koNameToEnNameCanonicalMap[canonicalKey] = dayEntry.enName;
-                        }
-                    }
-                });
-            });
-
-            Object.entries(koData).forEach(([key, koItem]) => {
-                const keywords = rawKeywordsByKey[key] || [];
-                const enKeywords = keywords
-                    .map(keyword => translateKeyword(keyword))
-                    .filter(Boolean)
-                    .map(translated => `#${translated}`)
-                    .join(' ');
-
-                enData[key] = {
-                    name: koItem.en_name,
-                    en_name: koItem.en_name,
-                    keywords: enKeywords,
-                    description: `You, who resemble the ${koItem.en_name} that blooms after enduring a harsh winter, are someone who brings hope to those around you.`,
-                    goodMatch: translateName(koItem.goodMatch),
-                    badMatch: translateName(koItem.badMatch)
-                };
-            });
-
-            return { ko: koData, en: enData };
-        }
+        const DATASET_URL = 'data/birthflowers-compiled.json';
 
         async function fetchBirthFlowerData(signal) {
             const fetchJson = async (url) => {
@@ -195,17 +50,19 @@
                 return response.json();
             };
 
-            const rawData = await fetchJson(DATA_URL);
-            let translationData = null;
             try {
-                translationData = await fetchJson(TRANSLATIONS_URL);
+                const dataset = await fetchJson(DATASET_URL);
+                if (dataset?.ko && dataset?.en) {
+                    return dataset;
+                }
+                throw new Error('Dataset is missing language branches.');
             } catch (error) {
-                console.error('Failed to load translation data:', error);
+                console.error('Failed to load compiled dataset:', error);
+                if (window?.BIRTHFLOWER_DATASET?.ko && window?.BIRTHFLOWER_DATASET?.en) {
+                    return window.BIRTHFLOWER_DATASET;
+                }
+                throw error;
             }
-            if (!translationData && window?.BIRTHFLOWER_TRANSLATIONS_EN) {
-                translationData = window.BIRTHFLOWER_TRANSLATIONS_EN;
-            }
-            return buildBirthFlowerDataset(rawData, translationData);
         }
         const translations = {
             ko: {
